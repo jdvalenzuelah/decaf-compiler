@@ -1,0 +1,6 @@
+// http://www.cs.columbia.edu/~sedwards/classes/2017/4115-spring/proposals/DECAF.pdf
+class Test {
+    void main() {
+        print("Hello world!");
+    }
+}
