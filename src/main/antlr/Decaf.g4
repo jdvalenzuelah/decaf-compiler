@@ -1,204 +1,158 @@
 grammar Decaf;
 
-
-/*
-  LEXER RULES
-  -----------
-  Lexer rules define the basic syntax of individual words and symbols of a
-  valid Decaf program. Lexer rules follow regular expression syntax.
-  Complete the lexer rules following the Decaf Language Specification.
-*/
+/* Lexer tokens */
 
 
+CLASS: 'class';
 
-CLASS : 'class';
+STRUCT: 'struct';
 
-INT : 'int';
+TRUE: 'true';
 
-RETURN : 'return';
+FALSE: 'false';
 
-VOID : 'void';
+VOID: 'void';
 
-IF : 'if';
+IF: 'if';
 
-ELSE : 'else';
+ELSE: 'else';
 
-FOR : 'for';
+WHILE: 'while';
 
-BREAK : 'break';
+RETURN: 'return';
 
-CONTINUE : 'continue';
+INT: 'int';
 
-CALLOUT : 'callout';
+CHAR: 'char';
 
-TRUE : 'True' ;
+BOOLEAN: 'boolean';
 
-FALSE : 'False' ;
+PROGRAM: 'Program'; // Just class named Program allowed?
 
-BOOLEAN : 'boolean';
+OBRACKET: '[';
 
-LCURLY : '{';
+CBRACKET: ']';
 
-RCURLY : '}';
+OCURLY: '{';
 
-LBRACE : '(';
+CCURLY: '}';
 
-RBRACE : ')';
+OPARENTHESIS: '(';
 
+CPARENTHESIS: ')';
 
-LSQUARE : '[';
+EQ: '=';
 
-RSQUARE : ']';
-ADD : '+';
+SUB: '-';
 
-SUB : '-';
+ADD: '+';
 
-MUL : '*';
+MUL: '*';
 
-DIV : '/';
+DIV: '/';
 
-EQ : '=';
+MOD: '%';
 
-SEMI : ';';
+GT: '>';
 
-COMMA : ',';
+LT: '<';
 
-AND : '&&';
+GTE: '>=';
 
-LESS : '<';
+LTE: '<=';
 
-GREATER : '>';
+EQUALTO:'==';
 
-LESSEQUAL : '<=' ;
+NOTEQUAL:'!=';
 
-GREATEREQUAL : '>=' ;
+AND: '&&';
 
-EQUALTO : '==' ;
+OR: '||';
 
-NOTEQUAL : '!=' ;
+SEMICOLON: ';';
 
-EXCLAMATION : '!';
+COMMA: ',';
 
+//SQUOTE: '\'';
 
+DOT: '.'; // needed?
 
-fragment CHAR : (' '..'!') | ('#'..'&') | ('('..'[') | (']'..'~') | ('\\'[']) | ('\\"') | ('\\') | ('\t') | ('\n');
-
-CHAR_LITERAL : '\'' CHAR '\'';
-
-//STRING_LITERAL : '"' CHAR+ '"' ;
-
-
-HEXMARK : '0x';
-
-fragment HEXA : [a-fA-F];
-
-fragment HEXDIGIT : DIGIT | HEXA ;
-
-HEX_LITERAL : HEXMARK HEXDIGIT+;
-
-
-STRING : '"' (ESC|.)*? '"';
-
-fragment ESC : '\\"' | '\\\\';
-
-
-
-
-fragment DIGIT : [0-9];
-
-DECIMAL_LITERAL : DIGIT(DIGIT)*;
-
-
+EXCL: '!';
 
 COMMENT : '//' ~('\n')* '\n' -> skip;
 
 WS : (' ' | '\n' | '\t' | '\r') + -> skip;
 
-fragment ALPHA : [a-zA-Z] | '_';
+fragment ESC: '\\\\' | '\\\'' |  '\\"' | '\\t' | '\\n';
 
-fragment ALPHA_NUM : ALPHA | DIGIT;
+fragment LETTER: [a-zA-Z];
 
+fragment DIGIT: [0-9];
 
+ID: LETTER (LETTER|DIGIT)*;
 
-ID : ALPHA ALPHA_NUM*;
+NUM: DIGIT (DIGIT)*;
 
-INT_LITERAL : DECIMAL_LITERAL | HEX_LITERAL;
+fragment CHARACTER: LETTER | ESC;
 
-BOOL_LITERAL : TRUE | FALSE;
+INT_LITERAL: NUM;
 
-/*
-  PARSER RULES
-  ------------
-  Parser rules are all lower case, and make use of lexer rules defined above
-  and other parser rules defined below. Parser rules also follow regular
-  expression syntax. Complete the parser rules following the Decaf Language
-  Specification.
-*/
+CHAR_LITERAL: '\'' CHARACTER '\'';
 
+BOOL_LITERAL: TRUE | FALSE;
 
+/* Parser rules */
 
+program: CLASS PROGRAM OCURLY (decl)* CCURLY;
 
-program : CLASS ID LCURLY field_decl* method_decl* RCURLY EOF;
+decl: var_decl | struct_decl | method_decl;
 
-field_name : ID | ID LSQUARE INT_LITERAL RSQUARE;
+var_decl: (var_type ID SEMICOLON) | (var_type ID OBRACKET NUM CBRACKET SEMICOLON);
 
-field_decl : datatype field_name (COMMA field_name)* SEMI;
+struct_decl: STRUCT ID OCURLY (var_decl)* CCURLY;
 
-method_decl : (datatype | VOID) ID LBRACE ((datatype ID) (COMMA datatype ID)*)? RBRACE block;
+var_type: INT | CHAR | BOOLEAN | (STRUCT ID) | struct_decl | VOID;
 
-block : LCURLY var_decl* statement* RCURLY;
+method_decl: method_type ID OPARENTHESIS ((parameter) (COMMA parameter)*)? CPARENTHESIS block;
 
-var_decl : datatype ID (COMMA ID)* SEMI;
+method_type: INT | CHAR | BOOLEAN | VOID;
 
+parameter: (parameter_type ID) | (parameter_type ID OCURLY CCURLY);
 
-datatype : INT | BOOLEAN;
+parameter_type: INT | CHAR | BOOLEAN;
 
-statement : location assign_op expr SEMI
-        | method_call SEMI
-        | IF LBRACE expr RBRACE block (ELSE block)?
-        | FOR ID EQ expr COMMA expr block
-        | RETURN (expr)? SEMI
-        | BREAK SEMI
-        | CONTINUE SEMI
-        | block;
+block: OCURLY (var_decl)* (statement)* CCURLY;
 
-assign_op : EQ
-          | ADD EQ
-          | SUB EQ;
+statement:  (IF OPARENTHESIS expression CPARENTHESIS block (ELSE block)?)
+          | (WHILE OPARENTHESIS expression CPARENTHESIS block)
+          | (RETURN (expression)? SEMICOLON)
+          | (method_call SEMICOLON)
+          | (block)
+          | (location EQ expression)
+          | (expression? SEMICOLON);
 
+location: (ID | (ID OBRACKET expression CBRACKET)) (DOT (ID | (ID OBRACKET expression CBRACKET)))?;
 
-method_call : method_name LBRACE (expr (COMMA expr)*)? RBRACE
-            | CALLOUT LBRACE STRING(COMMA callout_arg (COMMA callout_arg)*) RBRACE;
+method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 
+arg: expression;
 
-method_name : ID;
+expression: location
+          | method_call
+          | literal
+          | expression op expression
+          | SUB expression
+          | EXCL expression
+          | OPARENTHESIS expression CPARENTHESIS;
 
-location : ID | ID LSQUARE expr RSQUARE;
+op: arith_op | rel_op | eq_op | cond_op;
 
+arith_op: ADD | SUB | MUL | DIV | MOD;
 
-expr : location
-     | method_call
-     | literal
-     | expr bin_op expr
-     | SUB expr
-     | EXCLAMATION expr
-     | LBRACE expr RBRACE;
+rel_op: GT | LT | GTE | LTE;
 
- callout_arg : expr
-            | STRING ;
+eq_op: EQUALTO | NOTEQUAL;
 
-bin_op : arith_op
-      | rel_op
-      | eq_op
-      | cond_op;
+cond_op: AND | OR;
 
-
-arith_op : ADD | SUB | MUL | DIV | '%' ;
-
-rel_op : LESS | GREATER | LESSEQUAL | GREATEREQUAL ;
-
-eq_op : EQUALTO | NOTEQUAL ;
-
-cond_op : AND | '||' ;
-
-literal : INT_LITERAL | CHAR_LITERAL | BOOL_LITERAL ;
+literal: INT_LITERAL | CHAR_LITERAL | BOOL_LITERAL;
