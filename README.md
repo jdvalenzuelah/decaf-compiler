@@ -30,3 +30,30 @@ $ ./gradlew clean build
 $ ./gradlew generateGrammarSource
 ```
 
+
+## Usage
+```sh
+$ git clone git@github.com:jdvalenzuelah/decaf-compiler.git ${YOUR_PROJECT_NAME}
+$ cd ${YOUR_PROJECT_NAME}
+$ ./gradlew clean build
+```
+
+Extract the dist
+```sh
+$ tar -xf build/distributions/dcc-1.0.0.tar 
+```
+
+Run
+```sh
+$ ./dcc-1.0.0/bin/dcc --help
+Usage: dcc [OPTIONS] FILE
+
+Options:
+  -E             Only run the parser
+  -d, --dump     Prints parse tree in unix's tree utility style
+  --target TEXT  Generate code for the given target
+  -h, --help     Show this message and exit
+
+Arguments:
+  FILE  file to compile
+```

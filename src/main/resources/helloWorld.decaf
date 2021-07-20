@@ -1,6 +1,12 @@
 // http://www.cs.columbia.edu/~sedwards/classes/2017/4115-spring/proposals/DECAF.pdf
-class Test {
+class Program {
     void main() {
-        print("Hello world!");
+        char testVar;
+        testVar = 'H';
+
+        if(testVar == 'H') {
+            testVar = 'E';
+        }
+
     }
 }
