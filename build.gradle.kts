@@ -5,6 +5,7 @@ import java.io.File
 val jUnitVersion = "5.6.2"
 val tinyLogVersion = "2.3.1"
 val antlrVersion = "4.5"
+val cliKtVersion = "3.1.0"
 
 plugins {
     antlr
@@ -20,11 +21,11 @@ repositories {
     jcenter()
 }
 
-group = "com.github.jdvalenzuelah"
+group = "com.github.dcc"
 version = "1.0.0"
 
 application {
-    mainClassName = "com.github.jdvalenzuelah.MainKt"
+    mainClassName = "com.github.dcc.MainKt"
 }
 
 dependencies {
@@ -38,6 +39,8 @@ dependencies {
     antlr("org.antlr:antlr4:$antlrVersion")
     implementation("org.antlr:antlr4:$antlrVersion")
     implementation("org.antlr:antlr4-runtime:$antlrVersion")
+
+    implementation("com.github.ajalt.clikt:clikt:$cliKtVersion")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
@@ -62,6 +65,8 @@ tasks.withType<KotlinCompile> {
     dependsOn("generateGrammarSource")
 }
 
+sourceSets["main"].java.srcDir("build/generated/antlr/code")
+
 tasks.test {
     useJUnitPlatform {
         includeEngines("junit-jupiter","spek2")
@@ -79,8 +84,8 @@ tasks.wrapper {
 
 tasks.generateGrammarSource {
     maxHeapSize = "128m"
-    arguments.addAll(listOf("-package","com.github.jdvalenzuelah.parser"))
-    outputDirectory = File("src/main/java/com/github/jdvalenzuelah/parser")
+    arguments.addAll(listOf("-package","com.github.dcc.parser"))
+    outputDirectory = File("build/generated/antlr/code")
 }
 
 tasks.compileJava {
