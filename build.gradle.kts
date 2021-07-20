@@ -65,8 +65,6 @@ tasks.withType<KotlinCompile> {
     dependsOn("generateGrammarSource")
 }
 
-sourceSets["main"].java.srcDir("build/generated/antlr/code")
-
 tasks.test {
     useJUnitPlatform {
         includeEngines("junit-jupiter","spek2")
@@ -85,7 +83,7 @@ tasks.wrapper {
 tasks.generateGrammarSource {
     maxHeapSize = "128m"
     arguments.addAll(listOf("-package","com.github.dcc.parser"))
-    outputDirectory = File("build/generated/antlr/code")
+    outputDirectory = File("src/main/java/com/github/dcc/parser")
 }
 
 tasks.compileJava {
