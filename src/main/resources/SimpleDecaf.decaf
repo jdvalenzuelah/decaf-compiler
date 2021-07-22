@@ -1,4 +1,4 @@
-// http://www.cs.columbia.edu/~sedwards/classes/2017/4115-spring/proposals/DECAF.pdf
+// This is a test file
 class Program {
     void main() {
         char testVar;
