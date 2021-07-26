@@ -91,7 +91,7 @@ fragment DIGIT: [0-9];
 
 ID: LETTER (LETTER|DIGIT)*;
 
-NUM: DIGIT (DIGIT)*;
+fragment NUM: DIGIT (DIGIT)*;
 
 fragment CHARACTER: LETTER | ESC;
 
@@ -107,7 +107,7 @@ program: CLASS PROGRAM OCURLY (decl)* CCURLY;
 
 decl: var_decl | struct_decl | method_decl;
 
-var_decl: (var_type ID SEMICOLON) | (var_type ID OBRACKET NUM CBRACKET SEMICOLON);
+var_decl: (var_type ID SEMICOLON) | (var_type ID OBRACKET INT_LITERAL CBRACKET SEMICOLON);
 
 struct_decl: STRUCT ID OCURLY (var_decl)* CCURLY;
 
@@ -131,7 +131,7 @@ statement:  (IF OPARENTHESIS expression CPARENTHESIS block (ELSE block)?)
           | (location EQ expression)
           | (expression? SEMICOLON);
 
-location: (ID | (ID OBRACKET expression CBRACKET)) (DOT (ID | (ID OBRACKET expression CBRACKET)))?;
+location: (ID | ID OBRACKET expression CBRACKET) (DOT location)?;
 
 method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 

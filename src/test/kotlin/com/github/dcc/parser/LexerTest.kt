@@ -30,7 +30,7 @@ class LexerTest {
             "CHAR_LITERAL",
             "SEMICOLON",
             "RETURN",
-            "NUM",
+            "INT_LITERAL",
             "SEMICOLON",
             "CCURLY",
             "CCURLY"
