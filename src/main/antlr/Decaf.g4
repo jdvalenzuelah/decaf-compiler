@@ -7,10 +7,6 @@ CLASS: 'class';
 
 STRUCT: 'struct';
 
-TRUE: 'true';
-
-FALSE: 'false';
-
 VOID: 'void';
 
 IF: 'if';
@@ -89,17 +85,21 @@ fragment LETTER: [a-zA-Z];
 
 fragment DIGIT: [0-9];
 
-ID: LETTER (LETTER|DIGIT)*;
-
 fragment NUM: DIGIT (DIGIT)*;
 
 fragment CHARACTER: LETTER | ESC;
+
+fragment TRUE: 'true';
+
+fragment FALSE: 'false';
 
 INT_LITERAL: NUM;
 
 CHAR_LITERAL: '\'' CHARACTER '\'';
 
 BOOL_LITERAL: TRUE | FALSE;
+
+ID: LETTER (LETTER|DIGIT)*;
 
 /* Parser rules */
 
@@ -123,13 +123,15 @@ parameter_type: INT | CHAR | BOOLEAN;
 
 block: OCURLY (var_decl)* (statement)* CCURLY;
 
-statement:  (IF OPARENTHESIS expression CPARENTHESIS block (ELSE block)?)
-          | (WHILE OPARENTHESIS expression CPARENTHESIS block)
-          | (RETURN (expression)? SEMICOLON)
-          | (method_call SEMICOLON)
-          | (block)
-          | (location EQ expression)
-          | (expression? SEMICOLON);
+statement: if_expr | while_expr | return_expr | method_call SEMICOLON | block | assignment | (expression? SEMICOLON);
+
+if_expr: IF OPARENTHESIS expression CPARENTHESIS block (ELSE block)?;
+
+while_expr: WHILE OPARENTHESIS expression CPARENTHESIS block;
+
+return_expr: RETURN (expression)? SEMICOLON;
+
+assignment: location EQ expression;
 
 location: (ID | ID OBRACKET expression CBRACKET) (DOT location)?;
 
@@ -137,17 +139,19 @@ method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 
 arg: expression;
 
-expression: location
-          | method_call
-          | literal
-          | expression op expression
-          | SUB expression
-          | EXCL expression
-          | OPARENTHESIS expression CPARENTHESIS;
+expression: equality | location | method_call | literal;
 
-op: arith_op | rel_op | eq_op | cond_op;
+equality: comparison ( eq_op comparison )* (cond_op comparison)*;
 
-arith_op: ADD | SUB | MUL | DIV | MOD;
+comparison: term ((rel_op | eq_op)  term)*;
+
+term: factor ((ADD | SUB) factor)*;
+
+unary: (SUB | EXCL) unary | primary;
+
+factor: unary ((DIV | MUL) unary)*;
+
+primary: (literal | location) | OPARENTHESIS expression CPARENTHESIS;
 
 rel_op: GT | LT | GTE | LTE;
 
@@ -155,4 +159,4 @@ eq_op: EQUALTO | NOTEQUAL;
 
 cond_op: AND | OR;
 
-literal: INT_LITERAL | CHAR_LITERAL | BOOL_LITERAL;
+literal: BOOL_LITERAL | INT_LITERAL | CHAR_LITERAL;
