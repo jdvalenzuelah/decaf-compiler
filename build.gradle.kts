@@ -82,7 +82,7 @@ tasks.wrapper {
 
 tasks.generateGrammarSource {
     maxHeapSize = "128m"
-    arguments.addAll(listOf("-package","com.github.dcc.parser"))
+    arguments.addAll(listOf("-package","com.github.dcc.parser", "-visitor"))
     outputDirectory = File("src/main/java/com/github/dcc/parser")
 }
 
