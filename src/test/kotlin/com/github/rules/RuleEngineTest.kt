@@ -6,11 +6,11 @@ import org.junit.Assert.assertTrue
 class RuleEngineTest {
 
     private val stringAllUpperCase = rule<String> {
-        if(it.toUpperCase() == it) Result.Passed else Result.Error("Not all are upper")
+        if(it.toUpperCase() == it) valid() else error("Not all are upper")
     }
 
     private val containsA = rule<String> {
-        if(it.contains("A".toRegex(RegexOption.IGNORE_CASE))) Result.Passed else Result.Error("Should contain at leas one A")
+        if(it.contains("A".toRegex(RegexOption.IGNORE_CASE))) valid() else error("Should contain at leas one A")
     }
 
     private val containsAAndAllUpperCase = stringAllUpperCase.next(containsA)

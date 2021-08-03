@@ -1,11 +1,12 @@
 package com.github.rules
 
-sealed class Result {
-    object Passed : Result()
+sealed class Result<out A, out E> {
 
-    data class Error(
-        val message: String,
-        val next: Error? = null
-    ) : Result()
+    data class Passed<out A>(val a: A) : Result<A, Nothing>()
+
+    data class Error<out E>(
+        val e: E,
+        val next: Error<*>? = null
+    ) : Result<Nothing, E>()
 
 }
