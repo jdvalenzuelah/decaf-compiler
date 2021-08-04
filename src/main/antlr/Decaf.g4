@@ -147,7 +147,7 @@ location: (ID | ID OBRACKET expression CBRACKET) (DOT location)?;
 
 method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 
-arg: prop_decl | array_decl_no_size;
+arg: array_decl_no_size | ID;
 
 expression: equality | location | method_call | literal;
 
