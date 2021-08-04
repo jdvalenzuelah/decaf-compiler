@@ -23,3 +23,11 @@ fun <T> IRule<T>.next(next: IRule<T>) = rule<T> {
         else -> valid()
     }
 }
+
+inline fun <reified T> IRule<T>.nextCatching(next: IRule<T>) = rule<T> {
+    try {
+        this.next(next).eval(it)
+    } catch (e: Exception) {
+        error(e)
+    }
+}
