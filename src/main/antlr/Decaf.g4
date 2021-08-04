@@ -107,17 +107,27 @@ program: CLASS PROGRAM OCURLY (decl)* CCURLY;
 
 decl: var_decl | struct_decl | method_decl;
 
-var_decl: (var_type ID SEMICOLON) | (var_type ID OBRACKET INT_LITERAL CBRACKET SEMICOLON);
+var_decl: (prop_decl | array_decl) SEMICOLON;
+
+prop_decl: var_type ID;
+
+array_decl: var_type ID OBRACKET INT_LITERAL CBRACKET;
+
+array_decl_no_size: var_type ID OBRACKET CBRACKET;
 
 struct_decl: STRUCT ID OCURLY (var_decl)* CCURLY;
 
-var_type: INT | CHAR | BOOLEAN | (STRUCT ID) | struct_decl | VOID;
+var_type: INT | CHAR | BOOLEAN | (STRUCT ID) | VOID /* | struct_decl */;
 
 method_decl: method_type ID OPARENTHESIS ((parameter) (COMMA parameter)*)? CPARENTHESIS block;
 
 method_type: INT | CHAR | BOOLEAN | VOID;
 
-parameter: (parameter_type ID) | (parameter_type ID OCURLY CCURLY);
+parameter: simple_param | array_param;
+
+simple_param: parameter_type ID;
+
+array_param: parameter_type ID OBRACKET CBRACKET;
 
 parameter_type: INT | CHAR | BOOLEAN;
 
@@ -137,7 +147,7 @@ location: (ID | ID OBRACKET expression CBRACKET) (DOT location)?;
 
 method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 
-arg: expression;
+arg: prop_decl | array_decl_no_size;
 
 expression: equality | location | method_call | literal;
 
