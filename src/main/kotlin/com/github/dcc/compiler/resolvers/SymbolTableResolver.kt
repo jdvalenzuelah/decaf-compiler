@@ -7,6 +7,7 @@ import com.github.dcc.decaf.symbols.emptySymbolTable
 import com.github.dcc.decaf.symbols.symbolTableOf
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
+import kotlin.random.Random
 
 /*
     Resolve Symbol Table from a DecafParser.ProgramContext
@@ -115,15 +116,49 @@ class SymbolTableResolver private constructor(
     }
 
     override fun visitBlock(ctx: DecafParser.BlockContext?): SymbolTable {
-        return emptySymbolTable()
+        val statements = ctx?.statement()?.fold(emptySymbolTable()) { table, stm ->
+            table.apply { putAll(visitStatement(stm)) }
+        } ?: emptySymbolTable()
+
+        val decls = ctx?.var_decl()?.fold(emptySymbolTable()) { table, decl ->
+            table.apply { putAll(visitVar_decl(decl)) }
+        } ?: emptySymbolTable()
+
+        return emptySymbolTable().apply {
+            putAll(statements)
+            putAll(decls)
+        }
+    }
+
+    override fun visitStatement(ctx: DecafParser.StatementContext?): SymbolTable {
+        return ctx?.if_expr()?.let(::visitIf_expr)
+            ?: ctx?.while_expr()?.let(::visitWhile_expr)
+            ?: ctx?.block()?.let(::visitBlock)
+            ?: emptySymbolTable()
+    }
+
+    override fun visitIf_expr(ctx: DecafParser.If_exprContext?): SymbolTable {
+        val ifBlock = withChildScope("if") {
+            visitBlock(ctx?.if_block()?.block())
+        }
+
+        val elseBlock = withChildScope("else") {
+            visitBlock(ctx?.else_block()?.block())
+        }
+
+        return emptySymbolTable().apply {
+            putAll(ifBlock)
+            putAll(elseBlock)
+        }
+    }
+
+    override fun visitWhile_expr(ctx: DecafParser.While_exprContext?): SymbolTable {
+        return withChildScope("while") { visitBlock(ctx?.block()) }
     }
 
 }
 
-internal fun Symbol.genId(): String = when(this) {
-    is Symbol.Variable -> "$scope-$name-var"
-    is Symbol.Method -> "$scope-$name-fun"
-}
+private  fun Symbol.genId(): String = this.id
 
 internal fun DecafParser.Method_declContext.genSignature(scope: Scope): String {
     val name = ID()!!.text
