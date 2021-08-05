@@ -49,10 +49,11 @@ $ ./dcc-1.0.0/bin/dcc --help
 Usage: dcc [OPTIONS] FILE
 
 Options:
-  -E             Only run the parser
-  -d, --dump     Prints parse tree in unix's tree utility style
-  --target TEXT  Generate code for the given target
-  -h, --help     Show this message and exit
+  -E                   Only run the parser
+  -dt, --dump-tree     Prints parse tree in unix's tree utility style
+  -ds, --dump-symbols  Prints symbol table in plain text
+  --target TEXT        Generate code for the given target
+  -h, --help           Show this message and exit
 
 Arguments:
   FILE  file to compile

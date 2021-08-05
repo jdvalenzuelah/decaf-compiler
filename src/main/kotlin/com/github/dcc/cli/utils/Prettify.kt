@@ -62,8 +62,6 @@ object Prettify {
             buf.appendLine()
         }
 
-
-
         return buf.toString()
     }
 
