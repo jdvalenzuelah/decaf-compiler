@@ -131,11 +131,15 @@ array_param: parameter_type ID OBRACKET CBRACKET;
 
 parameter_type: INT | CHAR | BOOLEAN;
 
-block: OCURLY (var_decl)* (statement)* CCURLY;
+block: OCURLY (var_decl | statement)* CCURLY;
 
 statement: if_expr | while_expr | return_expr | method_call SEMICOLON | block | assignment | (expression? SEMICOLON);
 
-if_expr: IF OPARENTHESIS expression CPARENTHESIS block (ELSE block)?;
+if_expr: if_block else_block;
+
+if_block: IF OPARENTHESIS expression CPARENTHESIS block;
+
+else_block:(ELSE block)?;
 
 while_expr: WHILE OPARENTHESIS expression CPARENTHESIS block;
 
