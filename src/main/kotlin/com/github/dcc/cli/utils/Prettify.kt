@@ -1,6 +1,7 @@
 package com.github.dcc.cli.utils
 
 import com.github.dcc.decaf.symbols.SymbolTable
+import com.github.dcc.decaf.types.TypeTable
 import com.github.dcc.decaf.utils.StoreTable
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
@@ -29,11 +30,11 @@ object Prettify {
 
     fun symbolTable(t: SymbolTable): String {
         val header = mutableMapOf(
-            "UID" to 0,
-            "Name" to 0,
-            "Type" to 0,
-            "Symbol" to 0,
-            "Scope" to 0,
+            "UID" to 1,
+            "Name" to 1,
+            "Type" to 1,
+            "Symbol" to 1,
+            "Scope" to 1,
         )
         val rows = t.map { (uid, symbol) ->
             header["UID"] = max(header["UID"]!!, uid.length)
@@ -49,6 +50,30 @@ object Prettify {
                 "Scope" to symbol.scope.genId()
             )
         }
+        return table(header, rows)
+    }
+
+    fun typeTable(t: TypeTable): String {
+        val header = mutableMapOf(
+            "UID" to 1,
+            "Name" to 1,
+            "Args" to 1,
+        )
+
+        val rows = t.map { (uid, type) ->
+            header["UID"] = max(header["UID"]!!, uid.length)
+            header["Name"] = max(header["Name"]!!, type.name.length)
+            mapOf(
+                "UID" to uid,
+                "Name" to type.name,
+                "Args" to type.args.joinToString { "${it.name}:${it.type}" }
+            )
+        }
+
+        return table(header, rows)
+    }
+
+    private fun table(header: Map<String, Int>, rows: List<Map<String, String>>): String {
         val buf = StringBuilder()
         header.forEach { (header, size) ->
             buf.append(header.padEnd(size+2, ' '))

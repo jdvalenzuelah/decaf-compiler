@@ -9,6 +9,7 @@ import com.github.ajalt.clikt.parameters.types.file
 import com.github.dcc.cli.utils.Prettify
 import com.github.dcc.compiler.resolvers.StaticTypeResolver
 import com.github.dcc.compiler.resolvers.SymbolTableResolver
+import com.github.dcc.compiler.resolvers.TypeTableResolver
 import com.github.dcc.parser.*
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
@@ -25,6 +26,9 @@ object DCC : CliktCommand() {
         .flag(default = false)
 
     private val printSymbolTable by option("-ds", "--dump-symbols", help = "Prints symbol table in plain text")
+        .flag(default = false)
+
+    private val printTypeTable by option("-dtt", "--dump-types", help = "Prints struct table in plain text")
         .flag(default = false)
 
     private val target by option("--target", help = "Generate code for the given target")
@@ -47,6 +51,11 @@ object DCC : CliktCommand() {
         if(printSymbolTable) {
             tokenStream.reset() // make sure stream is at start
             echo(Prettify.symbolTable(SymbolTableResolver(parser)))
+        }
+
+        if(printTypeTable) {
+            tokenStream.reset()
+            echo(Prettify.typeTable(TypeTableResolver(parser)))
         }
 
     }
