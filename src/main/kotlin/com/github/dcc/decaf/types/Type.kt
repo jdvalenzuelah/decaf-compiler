@@ -1,6 +1,7 @@
 package com.github.dcc.decaf.types
 
 import com.github.dcc.decaf.symbols.Symbol
+import java.util.*
 
 /*
  Types supported by decaf spec
@@ -24,6 +25,9 @@ sealed class Type {
         val args: Collection<Symbol.Variable>
     ) : Type() {
         init { require(args.all { it.type !is StructDecl }) }
+
+        val id: String by lazy { UUID.randomUUID().toString() }
+
     }
 
     data class Struct(
