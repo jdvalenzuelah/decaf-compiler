@@ -2,7 +2,6 @@ package com.github.dcc.cli.utils
 
 import com.github.dcc.decaf.symbols.SymbolTable
 import com.github.dcc.decaf.types.TypeTable
-import com.github.dcc.decaf.utils.StoreTable
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
 import java.lang.StringBuilder
