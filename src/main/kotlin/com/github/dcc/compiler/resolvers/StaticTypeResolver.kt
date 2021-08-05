@@ -1,5 +1,6 @@
 package com.github.dcc.compiler.resolvers
 
+import com.github.dcc.decaf.symbols.Symbol
 import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
@@ -79,6 +80,10 @@ class StaticTypeResolver : DecafBaseVisitor<Type>() {
             ctx?.BOOLEAN() != null -> Type.Boolean
             else -> null
         }
+    }
+
+    override fun visitStruct_decl(ctx: DecafParser.Struct_declContext?): Type {
+        return Type.Struct(name = ctx!!.ID().text)
     }
 
 }

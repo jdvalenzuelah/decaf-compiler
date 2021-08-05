@@ -7,10 +7,11 @@ import com.github.dcc.decaf.symbols.emptySymbolTable
 import com.github.dcc.decaf.symbols.symbolTableOf
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
+import com.github.dcc.parser.genSignature
 import kotlin.random.Random
 
 /*
-    Resolve Symbol Table from a DecafParser.ProgramContext
+    Resolve Symbol (declared vars and methods) Table from a DecafParser.ProgramContext
 */
 class SymbolTableResolver private constructor(
     private val typeResolver: StaticTypeResolver
@@ -76,7 +77,7 @@ class SymbolTableResolver private constructor(
             name = ctx!!.ID()!!.text,
             scope = currentScope,
             type = typeResolver.visitMethod_decl(ctx)!!,
-            signature = ctx.genSignature(currentScope)
+            signature = ctx.genSignature(currentScope) //TODO: improve signature definition
         )
 
         val methodSymbols = withChildScope(s.name) {
@@ -159,9 +160,3 @@ class SymbolTableResolver private constructor(
 }
 
 private  fun Symbol.genId(): String = this.id
-
-internal fun DecafParser.Method_declContext.genSignature(scope: Scope): String {
-    val name = ID()!!.text
-    val args = parameter().joinToString(separator = ",") { it.text }
-    return "$scope.$name($args)"
-}
