@@ -10,7 +10,9 @@ import com.github.dcc.cli.utils.Prettify
 import com.github.dcc.compiler.resolvers.StaticTypeResolver
 import com.github.dcc.compiler.resolvers.SymbolTableResolver
 import com.github.dcc.compiler.resolvers.TypeTableResolver
+import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
 import com.github.dcc.parser.*
+import com.github.rules.Result
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 
@@ -56,6 +58,13 @@ object DCC : CliktCommand() {
         if(printTypeTable) {
             tokenStream.reset()
             echo(Prettify.typeTable(TypeTableResolver(parser)))
+        }
+
+        if(!justParser) {
+            when(val res = SemanticAnalysis(tokenStream, parser).analyze()) {
+                is Result.Passed -> echo("Passed!")
+                is Result.Error -> echo("${res.e}", err = true) //TODO: add prettify for errors
+            }
         }
 
     }
