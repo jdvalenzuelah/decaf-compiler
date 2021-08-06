@@ -24,12 +24,15 @@ object DCC : CliktCommand() {
     private val printParseTree by option("-dt", "--dump-tree", help = "Prints parse tree in unix's tree utility style")
         .flag(default = false)
 
+    //TODO
     private val printSymbolTable by option("-ds", "--dump-symbols", help = "Prints symbol table in plain text")
         .flag(default = false)
 
+    //TODO
     private val printTypeTable by option("-dtt", "--dump-types", help = "Prints struct table in plain text")
         .flag(default = false)
 
+    //TODO
     private val target by option("--target", help = "Generate code for the given target")
         .default("") //TODO: Add default target
 
@@ -47,9 +50,11 @@ object DCC : CliktCommand() {
             echo(Prettify.tree(parser.program(), parser.ruleNames.toList()))
         }
 
-        when(val res = SemanticAnalysis(parser)) {
-            is Validated.Valid -> echo("Passed!")
-            is Validated.Invalid -> echo(Prettify.semanticErrors(file.path, res, charStream), err = true)
+        if(!justParser) {
+            when(val res = SemanticAnalysis(parser)) {
+                is Validated.Valid -> echo("Passed!")
+                is Validated.Invalid -> echo(Prettify.semanticErrors(file.path, res, charStream), err = true)
+            }
         }
 
     }
