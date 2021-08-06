@@ -1,49 +1,28 @@
 package com.github.dcc.decaf.types
 
-import com.github.dcc.decaf.symbols.Symbol
-import java.util.*
+import org.antlr.v4.runtime.ParserRuleContext
 
-/*
- Types supported by decaf spec
-*/
 sealed class Type {
 
-    override fun toString(): String = this::class.simpleName ?: super.toString()
-
-    object Any : Type() // wildcard
-
     object Void : Type()
-
-    object Int : Type()
-
-    object Char : Type()
-
     object Boolean : Type()
-
-    data class StructDecl(
-        val name: String,
-        val args: Collection<Symbol.Variable>
-    ) : Type() {
-        init { require(args.all { it.type !is StructDecl }) }
-
-        val id: String by lazy { UUID.randomUUID().toString() }
-
-    }
+    object Int : Type()
+    object Char : Type()
 
     data class Struct(
         val name: String,
-    ) : Type()
+    ): Type()
 
     data class Array(
         val size: kotlin.Int,
-        val type: Type
+        val type: Type,
+        val context: ParserRuleContext,
     ): Type() {
-        init { require(type !is StructDecl) }
     }
 
     data class ArrayUnknownSize(
         val type: Type,
-    ) : Type() {
-        init { require(type !is StructDecl) }
-    }
+        val context: ParserRuleContext,
+    ): Type()
+
 }

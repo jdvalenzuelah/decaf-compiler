@@ -6,13 +6,10 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
-import com.github.dcc.cli.utils.Prettify
-import com.github.dcc.compiler.resolvers.StaticTypeResolver
-import com.github.dcc.compiler.resolvers.SymbolTableResolver
-import com.github.dcc.compiler.resolvers.TypeTableResolver
+import com.github.dcc.cli.ui.Prettify
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
 import com.github.dcc.parser.*
-import com.github.rules.Result
+import com.github.validation.Validated
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 
@@ -50,21 +47,9 @@ object DCC : CliktCommand() {
             echo(Prettify.tree(parser.program(), parser.ruleNames.toList()))
         }
 
-        if(printSymbolTable) {
-            tokenStream.reset() // make sure stream is at start
-            echo(Prettify.symbolTable(SymbolTableResolver(parser)))
-        }
-
-        if(printTypeTable) {
-            tokenStream.reset()
-            echo(Prettify.typeTable(TypeTableResolver(parser)))
-        }
-
-        if(!justParser) {
-            when(val res = SemanticAnalysis(tokenStream, parser).analyze()) {
-                is Result.Passed -> echo("Passed!")
-                is Result.Error -> echo(Prettify.semanticErrors(res, file.name), err = true)
-            }
+        when(val res = SemanticAnalysis(parser)) {
+            is Validated.Valid -> echo("Passed!")
+            is Validated.Invalid -> echo(Prettify.semanticErrors(file.path, res, charStream), err = true)
         }
 
     }

@@ -119,7 +119,9 @@ struct_decl: STRUCT ID OCURLY (var_decl)* CCURLY;
 
 var_type: INT | CHAR | BOOLEAN | (STRUCT ID) | VOID /* | struct_decl */;
 
-method_decl: method_type ID OPARENTHESIS ((parameter) (COMMA parameter)*)? CPARENTHESIS block;
+method_decl: method_sign block;
+
+method_sign: method_type ID OPARENTHESIS ((parameter) (COMMA parameter)*)? CPARENTHESIS;
 
 method_type: INT | CHAR | BOOLEAN | VOID;
 

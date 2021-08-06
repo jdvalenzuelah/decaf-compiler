@@ -1,6 +1,5 @@
 package com.github.dcc.compiler.resolvers
 
-import com.github.dcc.decaf.symbols.Symbol
 import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
@@ -16,6 +15,10 @@ class StaticTypeResolver : DecafBaseVisitor<Type>() {
     }
 
     override fun visitMethod_decl(ctx: DecafParser.Method_declContext?): Type? {
+        return visitMethod_sign(ctx?.method_sign())
+    }
+
+    override fun visitMethod_sign(ctx: DecafParser.Method_signContext?): Type? {
         return visitMethod_type(ctx?.method_type())
     }
 
@@ -26,7 +29,8 @@ class StaticTypeResolver : DecafBaseVisitor<Type>() {
     override fun visitArray_decl(ctx: DecafParser.Array_declContext?): Type? {
         return Type.Array(
             size = ctx!!.INT_LITERAL().text.toInt(),
-            type = visitVar_type(ctx.var_type())!!
+            type = visitVar_type(ctx.var_type())!!,
+            context = ctx
         )
     }
 
@@ -69,8 +73,8 @@ class StaticTypeResolver : DecafBaseVisitor<Type>() {
         return visitParameter_type(ctx?.parameter_type())!!
     }
 
-    override fun visitArray_param(ctx: DecafParser.Array_paramContext?): Type {
-        return Type.ArrayUnknownSize(visitParameter_type(ctx?.parameter_type())!!)
+    override fun visitArray_param(ctx: DecafParser.Array_paramContext): Type {
+        return Type.ArrayUnknownSize(visitParameter_type(ctx.parameter_type())!!, ctx)
     }
 
     override fun visitParameter_type(ctx: DecafParser.Parameter_typeContext?): Type? {
