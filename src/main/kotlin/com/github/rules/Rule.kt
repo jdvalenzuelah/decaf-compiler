@@ -9,25 +9,17 @@ fun <T> valid(a: T) = Passed(a)
 fun error() = Error<Any?>(null)
 fun <T> error(e: T) = Error(e)
 
-fun <T> rule(eval: (T) -> Result<*, *>) = IRule(eval)
+fun <T, A, E> rule(eval: (T) -> Result<A, E>) = IRule(eval)
 
-fun <T> IRule<T>.next(next: IRule<T>) = rule<T> {
+inline fun <T, reified E> IRule<T, *, E>.next(next: IRule<T, *, E>): IRule<T, *, E> = rule {
     val thisRes = this.eval(it)
     val nextRes = next.eval(it)
 
     when {
-        thisRes is Error<*> -> thisRes.copy(
-            next = if(nextRes is Error<*>) nextRes else null
+        thisRes is Error<E> -> thisRes.copy(
+            next = if(nextRes is Error<E>) nextRes else null
         )
-        nextRes is Error<*> -> nextRes
+        nextRes is Error<E> -> nextRes
         else -> valid()
-    }
-}
-
-inline fun <reified T> IRule<T>.nextCatching(next: IRule<T>) = rule<T> {
-    try {
-        this.next(next).eval(it)
-    } catch (e: Exception) {
-        error(e)
     }
 }

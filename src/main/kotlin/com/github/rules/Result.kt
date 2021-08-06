@@ -6,7 +6,7 @@ sealed class Result<out A, out E> {
 
     data class Error<out E>(
         val e: E,
-        val next: Error<*>? = null
+        val next: Error<E>? = null
     ) : Result<Nothing, E>()
 
 }
