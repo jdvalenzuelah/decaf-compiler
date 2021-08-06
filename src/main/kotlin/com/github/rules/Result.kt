@@ -4,9 +4,9 @@ sealed class Result<out A, out E> {
 
     data class Passed<out A>(val a: A) : Result<A, Nothing>()
 
-    data class Error<out E>(
+    data class Error<E>(
         val e: E,
-        val next: Error<E>? = null
+        var next: Error<E>? = null
     ) : Result<Nothing, E>()
 
 }
