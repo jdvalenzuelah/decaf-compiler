@@ -24,6 +24,9 @@ inline fun <T, reified E> IRule<T, *, E>.next(next: IRule<T, *, E>): IRule<T, *,
     }
 }
 
+
+fun <E> Error<E>.tail(): Error<E> = next?.tail() ?: this
+
 fun <T, E> Iterable<T>.zip(rule: IRule<T, *, E>): Result<*, E> {
     val results = map { rule.eval(it) }
 
@@ -32,7 +35,7 @@ fun <T, E> Iterable<T>.zip(rule: IRule<T, *, E>): Result<*, E> {
     else {
         val errors = results.filterIsInstance<Error<E>>().toMutableList()
 
-        val base = errors.removeFirst()
+        val base = errors.removeFirst().tail()
 
         errors.fold(base) { acc, next ->
             acc.copy(next = next)
