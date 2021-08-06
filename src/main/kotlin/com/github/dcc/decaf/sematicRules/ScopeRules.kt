@@ -7,7 +7,7 @@ import com.github.rules.*
 
 
 //TODO: Add tests
-object GlobalScopeRules {
+object ScopeRules {
 
     fun symbolRules() = methodContainsJustVariableParameters
         .next(singleMainDefinition)

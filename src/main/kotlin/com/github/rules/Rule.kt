@@ -23,3 +23,19 @@ inline fun <T, reified E> IRule<T, *, E>.next(next: IRule<T, *, E>): IRule<T, *,
         else -> valid()
     }
 }
+
+fun <T, E> Iterable<T>.zip(rule: IRule<T, *, E>): Result<*, E> {
+    val results = map { rule.eval(it) }
+
+    return if(results.all { it is Passed })
+        valid()
+    else {
+        val errors = results.filterIsInstance<Error<E>>().toMutableList()
+
+        val base = errors.removeFirst()
+
+        errors.fold(base) { acc, next ->
+            acc.copy(next = next)
+        }
+    }
+}
