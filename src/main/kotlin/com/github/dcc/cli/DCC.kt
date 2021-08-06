@@ -63,7 +63,7 @@ object DCC : CliktCommand() {
         if(!justParser) {
             when(val res = SemanticAnalysis(tokenStream, parser).analyze()) {
                 is Result.Passed -> echo("Passed!")
-                is Result.Error -> echo("${res.e}", err = true) //TODO: add prettify for errors
+                is Result.Error -> echo(Prettify.semanticErrors(res, file.name), err = true)
             }
         }
 

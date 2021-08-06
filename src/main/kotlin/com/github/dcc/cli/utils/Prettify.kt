@@ -1,7 +1,9 @@
 package com.github.dcc.cli.utils
 
+import com.github.dcc.decaf.sematicRules.SemanticError
 import com.github.dcc.decaf.symbols.SymbolTable
 import com.github.dcc.decaf.types.TypeTable
+import com.github.rules.Result
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
 import java.lang.StringBuilder
@@ -87,6 +89,35 @@ object Prettify {
         }
 
         return buf.toString()
+    }
+
+    fun semanticErrors(err: Result.Error<SemanticError>, fileName: String = ""): String {
+        val flattenErrors = mutableListOf<SemanticError>()
+            .apply { add(err.e) }
+        var nextError = err.next
+        while (nextError != null) {
+            flattenErrors.add(nextError.e)
+            nextError = nextError.next
+        }
+
+        return semanticErrors(flattenErrors, fileName)
+    }
+
+    fun semanticErrors(erros: Iterable<SemanticError>, fileName: String = ""): String {
+        val buf = StringBuilder()
+        erros.forEach {
+            buf.append(semanticError(it, fileName, it.sourceLocation?.start?.line ?: 0, it.sourceLocation?.start?.charPositionInLine ?: 0))
+            buf.appendLine()
+        }
+        return buf.toString()
+    }
+
+    fun semanticError(err: SemanticError, fileName: String = "", line: Int, char: Int): String {
+        return fileError(fileName, line, char, "semantic error: ${err.message}")
+    }
+
+    private fun fileError(fileName: String, line: Int, char: Int, error: String): String {
+        return "$fileName:$line:$char $error"
     }
 
 }
