@@ -1,4 +1,8 @@
 package com.github.dcc.decaf.sematicRules
 
-data class SemanticError(val message: String) {
-}
+import com.github.dcc.parser.SourceLocation
+
+data class SemanticError(
+    val message: String,
+    val sourceLocation: SourceLocation?
+)

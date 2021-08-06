@@ -2,6 +2,7 @@ package com.github.dcc.compiler.semanticAnalysis
 
 import com.github.dcc.compiler.resolvers.SymbolTableResolver
 import com.github.dcc.decaf.sematicRules.GlobalScopeRules
+import com.github.dcc.decaf.sematicRules.SemanticError
 import com.github.dcc.parser.DecafParser
 import com.github.rules.Result
 import org.antlr.v4.runtime.CommonTokenStream
@@ -18,8 +19,9 @@ class SemanticAnalysis(
         return block(parser)
     }
 
-    fun analyze(): Result<*,*> {
-        return GlobalScopeRules.singleMainDefinition.eval(symbolTable)
+    fun analyze(): Result<*, SemanticError> {
+        return GlobalScopeRules.symbolRules()
+            .eval(symbolTable)
     }
 
 }
