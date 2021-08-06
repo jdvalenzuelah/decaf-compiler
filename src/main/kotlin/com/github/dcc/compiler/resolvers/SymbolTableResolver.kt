@@ -5,10 +5,7 @@ import com.github.dcc.decaf.symbols.Symbol
 import com.github.dcc.decaf.symbols.SymbolTable
 import com.github.dcc.decaf.symbols.emptySymbolTable
 import com.github.dcc.decaf.symbols.symbolTableOf
-import com.github.dcc.parser.DecafBaseVisitor
-import com.github.dcc.parser.DecafParser
-import com.github.dcc.parser.genSignature
-import kotlin.random.Random
+import com.github.dcc.parser.*
 
 /*
     Resolve Symbol (declared vars and methods) Table from a DecafParser.ProgramContext
@@ -57,7 +54,11 @@ class SymbolTableResolver private constructor(
         val s = Symbol.Variable(
             name = ctx!!.ID()!!.text,
             scope = currentScope,
-            type = typeResolver.visitProp_decl(ctx)!!
+            type = typeResolver.visitProp_decl(ctx)!!,
+            location = SourceLocation(
+                start = ctx.start,
+                stop = ctx.stop
+            )
         )
 
         return symbolTableOf(s.genId() to s)
@@ -67,30 +68,40 @@ class SymbolTableResolver private constructor(
         val s = Symbol.Variable(
             name = ctx!!.ID()!!.text,
             scope = currentScope,
-            type = typeResolver.visitArray_decl(ctx)!!
+            type = typeResolver.visitArray_decl(ctx)!!,
+            location = SourceLocation(
+                start = ctx.start,
+                stop = ctx.stop
+            )
         )
         return symbolTableOf(s.genId() to s)
     }
 
     override fun visitMethod_decl(ctx: DecafParser.Method_declContext?): SymbolTable {
-        val s = Symbol.Method(
-            name = ctx!!.ID()!!.text,
-            scope = currentScope,
-            type = typeResolver.visitMethod_decl(ctx)!!,
-            signature = ctx.genSignature(currentScope) //TODO: improve signature definition
-        )
+        val methodScope = currentScope
+        val methodName = ctx!!.ID()!!.text
 
-        val methodSymbols = withChildScope(s.name) {
+        return withChildScope(methodName) {
             val params = ctx.parameter()?.fold(emptySymbolTable()) { table, decl ->
                 table.apply { putAll(visitParameter(decl)) }
             }
             emptySymbolTable().apply {
                 params?.let { putAll(it) }
                 putAll(visitBlock(ctx.block()))
+                val s = Symbol.Method(
+                    name = methodName,
+                    scope = methodScope,
+                    type = typeResolver.visitMethod_decl(ctx)!!,
+                    parameters = params?.values?.toList() ?: emptyList(),
+                    location = SourceLocation(
+                        start = ctx.start,
+                        stop = ctx.stop
+                    )
+                )
+                put(key = s.genId(), value = s)
             }
         }
 
-        return symbolTableOf(s.genId() to s).apply { putAll(methodSymbols) }
     }
 
     override fun visitParameter(ctx: DecafParser.ParameterContext?): SymbolTable {
@@ -102,7 +113,11 @@ class SymbolTableResolver private constructor(
         val s = Symbol.Variable(
             name = ctx!!.ID().text,
             scope = currentScope,
-            type = typeResolver.visitSimple_param(ctx)
+            type = typeResolver.visitSimple_param(ctx),
+            location = SourceLocation(
+                start = ctx.start,
+                stop = ctx.stop
+            )
         )
         return symbolTableOf(s.genId() to s)
     }
@@ -111,7 +126,11 @@ class SymbolTableResolver private constructor(
         val s = Symbol.Variable(
             name = ctx!!.ID().text,
             scope = currentScope,
-            type = typeResolver.visitArray_param(ctx)
+            type = typeResolver.visitArray_param(ctx),
+            location = SourceLocation(
+                start = ctx.start,
+                stop = ctx.stop
+            )
         )
         return symbolTableOf(s.genId() to s)
     }

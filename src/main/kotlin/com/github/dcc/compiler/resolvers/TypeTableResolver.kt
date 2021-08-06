@@ -8,6 +8,7 @@ import com.github.dcc.decaf.types.Type
 import com.github.dcc.decaf.types.typeTableOf
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
+import com.github.dcc.parser.SourceLocation
 
 /*
  Resolver for customs types (aka structs) from a Decaf.Parser
@@ -43,7 +44,11 @@ class TypeTableResolver private constructor(
                 Symbol.Variable(
                     name = it?.array_decl()?.ID()?.text ?: it.prop_decl().ID()!!.text,
                     scope = Scope.Global.child(name),
-                    type = typeResolver.visitVar_decl(it)!!
+                    type = typeResolver.visitVar_decl(it)!!,
+                    location = SourceLocation(
+                        start = ctx.start,
+                        stop = ctx.stop
+                    )
                 )
             }
         )
