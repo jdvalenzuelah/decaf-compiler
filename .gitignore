@@ -38,4 +38,4 @@ Thumbs.db
 
 #Project Spesific
 /dcc-blog
-/src/main/java/com/github/dcc/parser
+/libdcc/src/main/java/com/github/dcc/parser

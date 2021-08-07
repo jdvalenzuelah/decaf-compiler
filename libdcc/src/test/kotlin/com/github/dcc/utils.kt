@@ -10,7 +10,8 @@ fun Any.getResourceAsStream(file: String) = this::class.java.getResourceAsStream
 
 fun Any.getResourceAsANTLRInputStream(file: String) = ANTLRInputStream(getResourceAsStream(file))
 
-fun Any.getResourceAsDecafLexer(file: String) = DecafLexer(getResourceAsANTLRInputStream(file))
+fun Any.getResourceAsDecafLexer(file: String) =
+    DecafLexer(getResourceAsANTLRInputStream(file))
 
 fun Any.getResourceAsDecafTokenStream(file: String) = CommonTokenStream(getResourceAsDecafLexer(file))
 

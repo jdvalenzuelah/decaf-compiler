@@ -2,16 +2,15 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 
-val jUnitVersion = "5.6.2"
-val tinyLogVersion = "2.3.1"
-val antlrVersion = "4.5"
-val cliKtVersion = "3.1.0"
+val jUnitVersion:  String by rootProject
+val tinyLogVersion: String by rootProject
+val antlrVersion: String by rootProject
 
 plugins {
     antlr
     idea
     java
-    application
+
     kotlin("jvm") version "1.4.10"
 }
 
@@ -24,10 +23,6 @@ repositories {
 group = "com.github.dcc"
 version = "1.0.0"
 
-application {
-    mainClassName = "com.github.dcc.MainKt"
-}
-
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
@@ -39,8 +34,6 @@ dependencies {
     antlr("org.antlr:antlr4:$antlrVersion")
     implementation("org.antlr:antlr4:$antlrVersion")
     implementation("org.antlr:antlr4-runtime:$antlrVersion")
-
-    implementation("com.github.ajalt.clikt:clikt:$cliKtVersion")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
@@ -74,10 +67,6 @@ tasks.test {
         exceptionFormat = TestExceptionFormat.FULL
         events("passed", "failed", "skipped")
     }
-}
-
-tasks.wrapper {
-    gradleVersion = "6.6.1"
 }
 
 tasks.generateGrammarSource {
