@@ -5,14 +5,14 @@ import kweb.plugins.staticFiles.ResourceFolder
 import kweb.plugins.staticFiles.StaticFilesPlugin
 import org.jsoup.nodes.Document
 
-private const val resourceFolder = "monaco-editor/min/vs"
+private const val resourceFolder = "monaco-editor/min"
 private const val resourceRoute = "/static/monaco"
 
 class MonacoPlugin : KwebPlugin(dependsOn = setOf(StaticFilesPlugin(ResourceFolder(resourceFolder), resourceRoute))) {
 
     override fun decorate(doc: Document) {
         doc.body().appendElement("script")
-            .attr("src", "$resourceRoute/loader.js") //TODO: Change to minified
+            .attr("src", "$resourceRoute/vs/loader.js") //TODO: Change to minified
     }
 
 }
