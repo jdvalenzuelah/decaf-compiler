@@ -8,7 +8,7 @@ sealed class Declaration(
     open val name: String,
     open val type: Type,
     open val scope: Scope,
-    open val context: ParserRuleContext,
+    open val context: ParserRuleContext, //TODO: Remove
 ) {
 
     data class Variable(

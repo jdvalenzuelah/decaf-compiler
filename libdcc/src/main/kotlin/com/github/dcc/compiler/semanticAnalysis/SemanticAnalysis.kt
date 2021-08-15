@@ -25,7 +25,7 @@ class SemanticAnalysis private constructor(
     private val symbols = mutableListOf<Declaration>()
 
     override fun visitProgram(ctx: DecafParser.ProgramContext): Validated<SemanticError> {
-        val walkResult = ctx.decl().map(::visitDecl).zip()
+        val walkResult = Validated.Valid //ctx.decl().map(::visitDecl).zip()
 
         val globalScopeResult = GlobalScopeRules.containsJustOneMainMethod
             .then(GlobalScopeRules.mainMethodHasNoParameters)
@@ -35,14 +35,14 @@ class SemanticAnalysis private constructor(
         return walkResult then globalScopeResult
     }
 
-    override fun visitDecl(ctx: DecafParser.DeclContext?): Validated<SemanticError> {
+    /*override fun visitDecl(ctx: DecafParser.DeclContext?): Validated<SemanticError> {
         return if(ctx == null)
             Validated.Valid
         else
             visitMethod_decl(ctx.method_decl())
                 .then(visitStruct_decl(ctx.struct_decl()))
                 .then(visitVar_decl(ctx.var_decl()))
-    }
+    }*/
 
     override fun visitStruct_decl(ctx: DecafParser.Struct_declContext?): Validated<SemanticError> {
         if(ctx == null) return Validated.Valid

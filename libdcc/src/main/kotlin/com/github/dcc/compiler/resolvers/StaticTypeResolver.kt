@@ -7,7 +7,7 @@ import com.github.dcc.parser.DecafParser
 /*
     Resolve a decaf type from a DecafParserContext without info from symbol/type table
 */
-class StaticTypeResolver : DecafBaseVisitor<Type>() {
+internal class StaticTypeResolver : DecafBaseVisitor<Type>() {
 
     override fun visitVar_decl(ctx: DecafParser.Var_declContext?): Type? {
         return ctx?.array_decl()?.let(::visitArray_decl)

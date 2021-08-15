@@ -7,10 +7,14 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.dcc.cli.ui.Prettify
+import com.github.dcc.compiler.CompilerContext
+import com.github.dcc.compiler.context.Context
+import com.github.dcc.compiler.resolvers.ProgramContextResolver
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
 import com.github.dcc.parser.*
 import com.github.validation.Validated
 import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.BufferedTokenStream
 import org.antlr.v4.runtime.CommonTokenStream
 
 object DCC : CliktCommand() {
@@ -39,24 +43,49 @@ object DCC : CliktCommand() {
 
 
     override fun run() {
-        //TODO: Extract to service
+        /*
+        TODO: - apply rules to context, structure resolver/variables properly, prettify cli variable and method dump
+         */
         val charStream = ANTLRInputStream(file.inputStream())
         val lexer = DecafLexer(charStream)
-        val tokenStream = CommonTokenStream(lexer)
-        val parser = DecafParser(tokenStream)
+        val tokenStream = BufferedTokenStream(lexer)
+        val compilerContext = CompilerContext(tokenStream = tokenStream)
 
         if(printParseTree) {
             tokenStream.reset() // make sure stream is at start
-            echo(Prettify.tree(parser.program(), parser.ruleNames.toList()))
+            echo(Prettify.tree(compilerContext.parser.program(), compilerContext.parser.ruleNames.toList()))
         }
 
-        if(!justParser) {
-            when(val res = SemanticAnalysis(parser)) {
+        /*if(!justParser) {
+            when(val res = SemanticAnalysis(compilerContext.parser)) {
                 is Validated.Valid -> echo("Passed!")
                 is Validated.Invalid -> echo(Prettify.semanticErrors(file.path, res, charStream), err = true)
             }
+        }*/
+
+
+        ProgramContextResolver.resolve(compilerContext).allVariables().forEach {
+            println(it)
         }
 
     }
 
+}
+
+fun Context.ProgramContext.allVariables() = variables + methods
+    .flatMap { method -> method.block?.allVariables() ?: emptyList() }
+
+fun Context.BlockContext.allVariables(): List<Context.VariableContext> = variables + statements.flatMap {
+    when(val exp = it.expression) {
+        is Context.IfExpressionContext -> {
+            exp.ifBlockContext.block.allVariables() + (exp.elseBlock?.block?.allVariables() ?: emptyList())
+        }
+        is Context.WhileContext -> exp.block.allVariables()
+        is Context.BlockContext -> exp.allVariables()
+        is Context.ExpressionContext,
+        is Context.AssignmentContext,
+        is Context.MethodCallContext,
+        is Context.ReturnContext -> emptyList()
+        else -> emptyList()
+    }
 }
