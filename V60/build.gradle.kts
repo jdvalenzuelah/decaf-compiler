@@ -22,7 +22,7 @@ dependencies {
     implementation("org.antlr:antlr4:$antlrVersion")
     implementation("org.antlr:antlr4-runtime:$antlrVersion")
 
-    implementation("com.github.kwebio:kweb-core:$kwebVersion")
+    implementation("com.github.jdvalenzuelah:kweb-core:0.10.12")
 
     implementation(project(":libdcc"))
 }

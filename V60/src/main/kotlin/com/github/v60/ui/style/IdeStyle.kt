@@ -20,3 +20,5 @@ class IdeStyle : KwebPlugin(dependsOn = setOf(StaticFilesPlugin(ResourceFolder(r
 }
 
 val ideStyle get() = IdeStyle()
+
+val ide get() = IdeStyleClasses()
