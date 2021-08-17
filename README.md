@@ -49,7 +49,6 @@ $ ./dcc-1.0.0/bin/dcc --help
 Usage: dcc [OPTIONS] FILE
 
 Options:
-  -E                   Only run the parser
   -dt, --dump-tree     Prints parse tree in unix's tree utility style
   -ds, --dump-symbols  Prints symbol table in plain text
   -dtt, --dump-types   Prints struct table in plain text

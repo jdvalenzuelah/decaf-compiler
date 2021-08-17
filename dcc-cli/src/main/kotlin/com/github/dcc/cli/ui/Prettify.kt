@@ -1,12 +1,16 @@
 package com.github.dcc.cli.ui
 
 import com.github.dcc.compiler.semanticAnalysis.SemanticError
+import com.github.dcc.decaf.enviroment.lineage
+import com.github.dcc.decaf.enviroment.lineageAsString
+import com.github.dcc.decaf.symbols.Declaration
 import com.github.validation.Validated
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
 import java.lang.StringBuilder
+import kotlin.math.max
 
 object Prettify {
 
@@ -51,5 +55,76 @@ object Prettify {
     }
 
     private fun sourceCode(source: String, mark: Int) = "$source\n${" ".repeat(mark)}^~~~~~~~~~~~~~"
+
+
+    fun symbols(symbols: Iterable<Declaration>): String {
+        val symbolRows = symbols.map {
+            mapOf(
+                "name" to it.name,
+                "symbol type" to if(it is Declaration.Method) "method" else "variable",
+                "scope" to it.scope.lineageAsString(),
+                "type" to it.type.toString()
+            )
+        }
+        return table(listOf("name", "symbol type", "scope", "type"), symbolRows)
+    }
+
+    fun types(types: Iterable<Declaration.Struct>): String {
+        val typeRows = types.map {
+            mapOf(
+                "name" to it.name,
+                "scope" to it.scope.lineageAsString(),
+                "type" to it.type.toString(),
+                "properties" to it.properties.joinToString { p -> "${p.name} : ${p.type}" },
+            )
+        }
+
+        return table(listOf("name", "scope", "type", "properties"), typeRows)
+    }
+
+    private fun table(cols: List<String>, rows: List<Map<String, String>>): String {
+        val data = StringBuilder()
+
+        val header = StringBuilder()
+
+        val colSizes = cols.associateWith { col ->
+            val rowMax = rows.mapNotNull { it[col] }
+                .maxByOrNull { it.length }
+                ?.length ?: 0
+            max(rowMax, col.length)
+        }
+
+        header.append("|")
+        val colRowDivider = StringBuilder()
+        cols.forEach { col ->
+            val size = colSizes[col] ?: 0
+            val padded = col.padEnd(size, ' ')
+            header.append(" $padded |")
+            colRowDivider.append("+-","-".repeat(padded.length), '-')
+        }
+        colRowDivider.append("+")
+
+        header.appendLine()
+        header.appendLine(colRowDivider.toString())
+
+        rows.forEach { row ->
+            cols.forEach { col ->
+                val size = colSizes[col] ?: 0
+                val paddedRow = row.getOrDefault(col, "")
+                    .padEnd(size, ' ')
+                data.append("| $paddedRow ")
+            }
+            data.appendLine("|")
+        }
+
+        val table = StringBuilder()
+
+        table.appendLine(colRowDivider.toString())
+        table.append(header)
+        table.append(data)
+        table.append(colRowDivider.toString())
+
+        return table.toString()
+    }
 
 }
