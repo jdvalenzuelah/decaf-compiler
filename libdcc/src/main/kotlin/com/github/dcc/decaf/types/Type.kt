@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.ParserRuleContext
 
 sealed class Type {
 
+    object Nothing : Type()
     object Void : Type()
     object Boolean : Type()
     object Int : Type()
