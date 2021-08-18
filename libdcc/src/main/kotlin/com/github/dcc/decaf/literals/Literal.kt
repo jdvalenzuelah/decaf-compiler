@@ -1,7 +1,9 @@
 package com.github.dcc.decaf.literals
 
-sealed class Literal {
-    data class Boolean(val value: kotlin.Boolean): Literal()
-    data class Int(val value: kotlin.Int): Literal()
-    data class Char(val value: kotlin.String): Literal()
+import com.github.dcc.decaf.types.Type
+
+sealed class Literal(val type: Type) {
+    data class Boolean(val value: kotlin.Boolean): Literal(Type.Boolean)
+    data class Int(val value: kotlin.Int): Literal(Type.Int)
+    data class Char(val value: kotlin.String): Literal(Type.Char)
 }
