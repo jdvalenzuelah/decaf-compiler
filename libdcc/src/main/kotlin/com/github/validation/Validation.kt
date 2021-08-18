@@ -28,3 +28,19 @@ fun <E>  Collection<Validated<E>>.zip(): Validated<E> =
     this.fold(Validated.Valid as Validated<E>) { acc, next ->
         acc.then(next)
     }
+
+
+class ValidationChainBuilder<I, E> {
+    private var baseValidation = Validation<I, E> { Validated.Valid }
+
+    operator fun Validation<I, E>.unaryPlus() { baseValidation = baseValidation.then(this@unaryPlus) }
+
+    fun build(): Validation<I, E> = baseValidation
+
+}
+
+fun <I, E> validation(init: ValidationChainBuilder<I, E>.() -> Unit): Validation<I, E> = ValidationChainBuilder<I, E>()
+    .apply(init)
+    .build()
+
+fun <I, E> validated(test: I, init: ValidationChainBuilder<I, E>.() -> Unit) = validation(init).invoke(test)
