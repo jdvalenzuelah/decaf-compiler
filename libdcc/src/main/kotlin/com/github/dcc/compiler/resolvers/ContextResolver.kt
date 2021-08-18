@@ -10,6 +10,7 @@ import com.github.dcc.decaf.literals.Literal
 import com.github.dcc.decaf.operators.*
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
+import kotlin.math.exp
 
 
 class ProgramContextResolver private constructor(
@@ -84,23 +85,43 @@ class BlockContextResolver internal constructor(
                     parserContext = it
                 )
             },
-            statements = ctx.statement().map(::visitStatement),
+            statements = ctx.statement().mapNotNull(::visitStatement),
             parserContext = ctx
         )
     }
 
-    override fun visitStatement(ctx: DecafParser.StatementContext): Context.StatementContext {
-        return Context.StatementContext(
-            expression = when {
-                ctx.if_expr() != null -> visitIf_expr(ctx.if_expr())
-                ctx.while_expr() != null -> visitWhile_expr(ctx.while_expr())
-                ctx.return_expr() != null -> visitReturn_expr(ctx.return_expr())
-                ctx.method_call() != null -> visitMethod_call(ctx.method_call())
-                ctx.block() != null -> visitBlock(ctx.block())
-                ctx.assignment() != null -> visitAssignment(ctx.assignment())
-                ctx.expression() != null -> visitExpression(ctx.expression())
-                else -> null
-            },
+    override fun visitStatement(ctx: DecafParser.StatementContext): Context.StatementContext? {
+        return when {
+            ctx.if_expr() != null -> Context.StatementContext.If(visitIf_expr(ctx.if_expr()), ctx)
+            ctx.while_expr() != null -> Context.StatementContext.While(visitWhile_expr(ctx.while_expr()), ctx)
+            ctx.return_expr() != null -> Context.StatementContext.Return(visitReturn_expr(ctx.return_expr()), ctx)
+            ctx.method_call() != null -> Context.StatementContext.MethodCall(visitMethod_call(ctx.method_call()), ctx)
+            ctx.block() != null -> Context.StatementContext.Block(visitBlock(ctx.block()), ctx)
+            ctx.assignment() != null -> Context.StatementContext.Assignment(visitAssignment(ctx.assignment()), ctx)
+            ctx.expression() != null -> Context.StatementContext.Expression(visitExpression(ctx.expression()), ctx)
+            else -> null
+        }
+    }
+
+    override fun visitWhile_expr(ctx: DecafParser.While_exprContext): Context.WhileContext {
+        return Context.WhileContext(
+            expression = visitExpression(ctx.expression()),
+            block = visitBlock(ctx.block()),
+            parserContext = ctx
+        )
+    }
+
+    override fun visitReturn_expr(ctx: DecafParser.Return_exprContext): Context.ReturnContext {
+        return Context.ReturnContext(
+            expression = ctx.expression()?.let(::visitExpression),
+            parserContext = ctx,
+        )
+    }
+
+    override fun visitAssignment(ctx: DecafParser.AssignmentContext): Context.AssignmentContext {
+        return Context.AssignmentContext(
+            location = visitLocation(ctx.location()),
+            expression = visitExpression(ctx.expression()),
             parserContext = ctx
         )
     }
@@ -129,16 +150,13 @@ class BlockContextResolver internal constructor(
     }
 
     override fun visitExpression(ctx: DecafParser.ExpressionContext): Context.ExpressionContext {
-        return Context.ExpressionContext(
-            expression = when {
-                ctx.equality() != null -> visitEquality(ctx.equality())
-                ctx.location() != null -> visitLocation(ctx.location())
-                ctx.method_call() != null -> visitMethod_call(ctx.method_call())
-                ctx.literal() != null -> visitLiteral(ctx.literal())
-                else -> error("Malformed expression!")
-            },
-            parserContext = ctx,
-        )
+        return when {
+            ctx.equality() != null -> Context.ExpressionContext.Equality(visitEquality(ctx.equality()), ctx)
+            ctx.location() != null -> Context.ExpressionContext.Location(visitLocation(ctx.location()), ctx)
+            ctx.method_call() != null -> Context.ExpressionContext.MethodCall(visitMethod_call(ctx.method_call()), ctx)
+            ctx.literal() != null -> Context.ExpressionContext.Literal(visitLiteral(ctx.literal()), ctx)
+            else -> error("Malformed expression!")
+        }
     }
 
     override fun visitEquality(ctx: DecafParser.EqualityContext): Context.EqualityContext {

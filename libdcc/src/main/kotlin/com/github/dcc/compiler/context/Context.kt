@@ -41,10 +41,46 @@ sealed class Context(
         override val parserContext: DecafParser.BlockContext
     ): Context(parserContext)
 
-    data class StatementContext(
-        val expression: Context?, //sealed class
+    sealed class StatementContext(
         override val parserContext: DecafParser.StatementContext
-    ): Context(parserContext)
+    ): Context(parserContext) {
+
+        data class If(
+            val ifContext: IfExpressionContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+        data class While(
+            val whileContext: WhileContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+        data class Return(
+            val returnContext: ReturnContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+        data class MethodCall(
+            val methodCallContext: MethodCallContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+        data class Block(
+            val blockContext: BlockContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+        data class Assignment(
+            val assignmentContext: AssignmentContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+        data class Expression(
+            val expression: ExpressionContext,
+            override val parserContext: DecafParser.StatementContext
+        ): StatementContext(parserContext)
+
+    }
 
     data class IfExpressionContext(
         val ifBlockContext: IfBlockContext,
@@ -119,10 +155,31 @@ sealed class Context(
         override val parserContext: DecafParser.Sub_locationContext
     ): Context(parserContext)
 
-    data class ExpressionContext(
-        val expression: Context, //sealed class
+    sealed class ExpressionContext(
         override val parserContext: DecafParser.ExpressionContext
-    ): Context(parserContext)
+    ): Context(parserContext) {
+
+        data class Equality(
+            val equalityContext: EqualityContext,
+            override val parserContext: DecafParser.ExpressionContext
+        ): ExpressionContext(parserContext)
+
+        data class Location(
+            val locationContext: LocationContext,
+            override val parserContext: DecafParser.ExpressionContext
+        ): ExpressionContext(parserContext)
+
+        data class MethodCall(
+            val methodCallContext: MethodCallContext,
+            override val parserContext: DecafParser.ExpressionContext
+        ): ExpressionContext(parserContext)
+
+        data class Literal(
+            val literalContext: LiteralContext,
+            override val parserContext: DecafParser.ExpressionContext
+        ): ExpressionContext(parserContext)
+
+    }
 
     data class EqualityContext(
         val comparison: ComparisonContext,
