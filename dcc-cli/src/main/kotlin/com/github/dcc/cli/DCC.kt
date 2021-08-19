@@ -12,6 +12,8 @@ import com.github.dcc.compiler.context.allVariables
 import com.github.dcc.compiler.context.symbols
 import com.github.dcc.compiler.context.types
 import com.github.dcc.compiler.resolvers.ProgramContextResolver
+import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
+import com.github.validation.Validated
 
 
 object DCC : CliktCommand() {
@@ -37,9 +39,6 @@ object DCC : CliktCommand() {
 
 
     override fun run() {
-        /*
-        TODO: - apply rules to context
-         */
         val compilerContext = CompilerContext(file)
 
         if(printParseTree) {
@@ -55,6 +54,11 @@ object DCC : CliktCommand() {
 
         if(printTypeTable) {
             echo(Prettify.types(programContext.types))
+        }
+
+        when(val semanticAnalysis = SemanticAnalysis(programContext)) {
+            is Validated.Valid -> echo("Passed!")
+            is Validated.Invalid -> echo(Prettify.semanticErrors(semanticAnalysis, compilerContext), err = true)
         }
 
     }

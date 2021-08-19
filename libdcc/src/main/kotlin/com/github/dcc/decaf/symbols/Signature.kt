@@ -5,7 +5,9 @@ import com.github.dcc.decaf.types.Type
 data class Signature(
     val name: String,
     val parameters: List<Type>
-)
+) {
+    override fun toString(): String = "${name}(${parameters.joinToString(separator = ",") { it.toString() }})"
+}
 
 
 fun Declaration.Method.signature(): Signature = Signature(

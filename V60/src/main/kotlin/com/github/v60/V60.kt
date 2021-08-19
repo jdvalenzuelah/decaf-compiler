@@ -73,11 +73,11 @@ class V60(
 
                         println(codeInput.valueJsExpression)
                         actionBarContext.build.on(retrieveJs = codeInput.valueJsExpression).click {
-                            val charStream = ANTLRInputStream(it.retrieved.jsonPrimitive.content)
+                            /*val charStream = ANTLRInputStream(it.retrieved.jsonPrimitive.content)
                             val lexer = DecafLexer(charStream)
                             val tokenStream = CommonTokenStream(lexer)
-                            val parser = DecafParser(tokenStream)
-                            errors.value = SemanticAnalysis(parser)
+                            val parser = DecafParser(tokenStream)*/
+                            errors.value = Validated.Valid
                         }
                     }
                 }

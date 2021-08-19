@@ -30,7 +30,6 @@ internal class StaticTypeResolver : DecafBaseVisitor<Type>() {
         return Type.Array(
             size = ctx!!.INT_LITERAL().text.toInt(),
             type = visitVar_type(ctx.var_type())!!,
-            context = ctx
         )
     }
 
@@ -74,7 +73,7 @@ internal class StaticTypeResolver : DecafBaseVisitor<Type>() {
     }
 
     override fun visitArray_param(ctx: DecafParser.Array_paramContext): Type {
-        return Type.ArrayUnknownSize(visitParameter_type(ctx.parameter_type())!!, ctx)
+        return Type.ArrayUnknownSize(visitParameter_type(ctx.parameter_type())!!)
     }
 
     override fun visitParameter_type(ctx: DecafParser.Parameter_typeContext?): Type? {

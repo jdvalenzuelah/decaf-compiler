@@ -3,19 +3,17 @@ package com.github.dcc.compiler.resolvers
 import com.github.dcc.compiler.context.Context
 import com.github.dcc.compiler.context.Context.*
 import com.github.dcc.decaf.enviroment.Scope
-import com.github.dcc.decaf.symbols.Declaration
-import com.github.dcc.decaf.symbols.Signature
-import com.github.dcc.decaf.symbols.signature
+import com.github.dcc.decaf.symbols.*
 import com.github.dcc.decaf.types.Type
 
 /* pseudo visitor */
 internal class ContextualTypeResolver(
-    symbols: List<Declaration>,
-    val types: List<Declaration.Struct>,
+    symbols: SymbolStore,
+    val types: TypeStore,
     val scope: Scope,
 ) {
 
-    val symbols: List<Declaration> = symbols.filter { it.scope == scope || it.scope is Scope.Global }
+    val symbols: SymbolStore = symbols.filter { it.scope == scope || it.scope is Scope.Global }
 
     init {
         require(symbols.all { it is Declaration.Variable || it is Declaration.Method }) {
@@ -32,13 +30,16 @@ internal class ContextualTypeResolver(
         }
     }
 
-    fun visitMethodCall(ctx: MethodCallContext): Type {
-        val callSignature = Signature(
-            name = ctx.name,
-            parameters = ctx.args.map(::visitArgument)
-        )
+    //TODO: extract this
+    fun getMethodCallSignature(ctx: MethodCallContext): Signature = Signature(
+        name = ctx.name,
+        parameters = ctx.args.map(::visitArgument)
+    )
 
-        return resolveMethodBySignature(callSignature).type
+    fun visitMethodCall(ctx: MethodCallContext): Type {
+        val callSignature = getMethodCallSignature(ctx)
+
+        return symbols.findBySignatureOrNull(callSignature)?.type ?: Type.Nothing
     }
 
     fun visitArgument(ctx: ArgContext): Type = visitExpression(ctx.expression)
@@ -58,8 +59,49 @@ internal class ContextualTypeResolver(
     fun visitLocationArray(ctx: LocationArrayContext): Type  = resolveVariableType(ctx.id)
 
     fun visitEquality(ctx: EqualityContext): Type {
-        println(ctx)
-        return Type.Nothing
+        /* cond and eq op result is boolean, operand types must be checked by semantic analysis */
+        return if(ctx.condOperations.isEmpty() && ctx.eqOperations.isEmpty())
+            visitComparison(ctx.comparison)
+        else
+            Type.Boolean
+    }
+
+    fun visitComparison(ctx: ComparisonContext): Type {
+        /* boolean op result is boolean, operand types must be checked by semantic analysis */
+        return if(ctx.operations.isEmpty()) visitTerm(ctx.term) else Type.Boolean
+    }
+
+    fun visitTerm(ctx: TermContext): Type {
+        /* SubAddContext operations do not change type,
+           might check operators type but that might be a semantic analysis task */
+        return visitFactor(ctx.factor)
+    }
+
+    fun visitFactor(ctx: FactorContext): Type {
+        /* MulDivContext operations do not change type,
+           might check operators type but that might be a semantic analysis task */
+        return visitUnary(ctx.unary)
+    }
+
+    fun visitUnary(ctx: UnaryContext): Type {
+        return when(ctx) {
+            is UnaryContext.Primary -> visitPrimary(ctx.primary)
+            is UnaryContext.Operation -> visitUnary(ctx.unary) // unary op does not change type
+        }
+    }
+
+    fun visitPrimary(ctx: PrimaryContext): Type {
+        return when(ctx) {
+            is PrimaryContext.Expression -> visitExpression(ctx.expression)
+            is PrimaryContext.SymbolPri -> visitSymbolPri(ctx.symbolPriContext)
+        }
+    }
+
+    fun visitSymbolPri(ctx: SymbolPriContext): Type {
+        return when(ctx) {
+            is SymbolPriContext.Literal -> visitLiteral(ctx.literal)
+            is SymbolPriContext.Location -> visitLocation(ctx.location)
+        }
     }
 
     fun visitLiteral(ctx: LiteralContext): Type = ctx.literal.type
@@ -87,9 +129,5 @@ internal class ContextualTypeResolver(
              parentType is Type.Struct && sub != null -> resolveSubLocationType(varName, sub)
              else -> parentType
          }
-    }
-
-    private fun resolveMethodBySignature(signature: Signature): Declaration.Method {
-        return symbols.first { it is Declaration.Method && it.signature() == signature } as Declaration.Method
     }
 }

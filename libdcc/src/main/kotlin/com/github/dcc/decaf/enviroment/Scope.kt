@@ -29,3 +29,5 @@ fun Scope.lineage(): LinkedList<Scope> =
 fun Scope.lineageAsString(): String = this.lineage().joinToString(separator = "@") { it.toString() }
 
 fun Scope.child(name: String): Scope = Scope.Local(name, this)
+
+fun methodScope(name: String): Scope = Scope.Global.child(name)

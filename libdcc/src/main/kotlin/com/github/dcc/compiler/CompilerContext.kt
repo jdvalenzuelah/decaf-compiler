@@ -3,22 +3,15 @@ package com.github.dcc.compiler
 import com.github.dcc.parser.DecafLexer
 import com.github.dcc.parser.DecafParser
 import org.antlr.v4.runtime.ANTLRInputStream
-import org.antlr.v4.runtime.BufferedTokenStream
+import org.antlr.v4.runtime.CommonTokenStream
 import java.io.File
 
 class CompilerContext(
-    val tokenStream: BufferedTokenStream,
+    val file: File,
 ) {
 
-    constructor(file: File) : this(
-        BufferedTokenStream(
-            DecafLexer(
-                ANTLRInputStream(
-                    file.inputStream()
-                )
-            )
-        )
-    )
+    val inputStream = ANTLRInputStream(file.inputStream())
+    val tokenStream = CommonTokenStream(DecafLexer(inputStream))
 
     val parser: DecafParser get() {
         tokenStream.reset()

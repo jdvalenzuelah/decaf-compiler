@@ -19,14 +19,12 @@ sealed class Type {
     data class Array(
         val size: kotlin.Int,
         val type: Type,
-        val context: ParserRuleContext,
     ): Type() {
         override fun toString(): String = "${type}Array[$size]"
     }
 
     data class ArrayUnknownSize(
         val type: Type,
-        val context: ParserRuleContext,
     ): Type() {
         override fun toString(): String = "${type}Array[]"
     }
