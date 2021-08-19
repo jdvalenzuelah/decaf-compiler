@@ -80,3 +80,77 @@ fun Context.BlockContext.methodCalls(): List<Context.MethodCallContext> {
         }
     }
 }
+
+fun Context.BlockContext.locations(): List<Context.LocationContext> {
+    return statements.flatMap { statement ->
+        when(statement) {
+            is Context.StatementContext.MethodCall -> statement.methodCallContext.locations()
+            is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.locations() + (statement.ifContext.elseBlock?.block?.locations() ?: emptyList())
+            is Context.StatementContext.While -> statement.whileContext.block.locations()
+            is Context.StatementContext.Block -> statement.blockContext.locations()
+            is Context.StatementContext.Assignment -> statement.assignmentContext.expression.locations()
+            is Context.StatementContext.Expression -> statement.expression.locations()
+            is Context.StatementContext.Return -> statement.returnContext.expression?.locations() ?: emptyList()
+        }
+    }
+}
+
+fun Context.MethodCallContext.locations(): List<Context.LocationContext> {
+    return args.flatMap { it.expression.locations() }
+}
+
+fun Context.ExpressionContext.locations(): List<Context.LocationContext> {
+    return when(this) {
+        is Context.ExpressionContext.Location -> listOf(locationContext) + listOfNotNull(locationContext.subLocation?.location)
+        is Context.ExpressionContext.Equality -> equalityContext.locations()
+        is Context.ExpressionContext.MethodCall -> methodCallContext.locations()
+        is Context.ExpressionContext.Literal -> emptyList()
+    }
+}
+
+fun Context.EqualityContext.locations(): List<Context.LocationContext> {
+    return comparison.locations() + eqOperations.flatMap { it.locations() } + condOperations.flatMap { it.locations() }
+}
+
+fun Context.ComparisonContext.locations(): List<Context.LocationContext> {
+    return term.locations() + operations.flatMap { it.locations() }
+}
+
+fun Context.TermContext.locations(): List<Context.LocationContext> {
+    return factor.locations() + operations.flatMap { it.locations() }
+}
+
+fun Context.FactorContext.locations(): List<Context.LocationContext> {
+    return unary.locations() + operations.flatMap { it.locations() }
+}
+
+fun Context.UnaryContext.locations(): List<Context.LocationContext> {
+    return when(this) {
+        is Context.UnaryContext.Primary -> primary.locations()
+        is Context.UnaryContext.Operation -> unary.locations()
+    }
+}
+
+fun Context.MulDivContext.locations(): List<Context.LocationContext> = unary.locations()
+
+fun Context.PrimaryContext.locations(): List<Context.LocationContext> {
+    return when(this) {
+        is Context.PrimaryContext.SymbolPri -> symbolPriContext.locations()
+        is Context.PrimaryContext.Expression -> expression.locations()
+    }
+}
+
+fun Context.SymbolPriContext.locations(): List<Context.LocationContext> {
+    return when(this) {
+        is Context.SymbolPriContext.Literal -> emptyList()
+        is Context.SymbolPriContext.Location -> listOf(location)
+    }
+}
+
+fun Context.SubAddContext.locations(): List<Context.LocationContext> = factor.locations()
+
+fun Context.BooleanOperationContext.locations(): List<Context.LocationContext> = term.locations()
+
+fun Context.EqOperationContext.locations(): List<Context.LocationContext> = comparison.locations()
+
+fun Context.CondOperationContext.locations(): List<Context.LocationContext> = comparison.locations()

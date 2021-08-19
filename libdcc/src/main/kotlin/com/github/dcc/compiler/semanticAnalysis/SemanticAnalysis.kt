@@ -1,10 +1,7 @@
 package com.github.dcc.compiler.semanticAnalysis
 
 import com.github.dcc.compiler.Error.SemanticError
-import com.github.dcc.compiler.context.Context
-import com.github.dcc.compiler.context.allVariables
-import com.github.dcc.compiler.context.methodCalls
-import com.github.dcc.compiler.context.symbols
+import com.github.dcc.compiler.context.*
 import com.github.dcc.compiler.resolvers.ContextualTypeResolver
 import com.github.dcc.decaf.enviroment.Scope
 import com.github.dcc.decaf.enviroment.lineageAsString
@@ -31,6 +28,8 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         +uniqueStructName
         +checkMethodsReturnTypes
         +checkMethodCallsAnExistingMethod
+        +checkArrayIndexAccess
+        +checkAssignmentType
     }
 
     private val checkArraySize = Validation<Context.VariableContext, SemanticError> {
@@ -41,11 +40,11 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         }
     }
 
-    private val arraySizeGreaterThanZero = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val arraySizeGreaterThanZero = SemanticRule { program ->
         program.variables.map { checkArraySize(it) }.zip()
     }
 
-    private val exactlyOneMainMethod = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val exactlyOneMainMethod = SemanticRule { program ->
         val mainMethods = program.methods.filter { it.declaration.name == "main" }
 
         if(mainMethods.size == 1)
@@ -56,7 +55,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
 
     }
 
-    private val mainMethodDoesNotHaveAnyParams = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val mainMethodDoesNotHaveAnyParams = SemanticRule { program ->
         val mainMethods = program.methods.filter { it.declaration.name == "main" }
             .filter { it.declaration.parameters.isNotEmpty() }
 
@@ -67,7 +66,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
                 .zip()
     }
 
-    private val noDuplicatedVariablesInSameScope = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val noDuplicatedVariablesInSameScope = SemanticRule { program ->
         val checkNoDuplicatedVariables = Validation<Map.Entry<Scope, Collection<Context.VariableContext>>, SemanticError> { (_, variables) ->
             variables.groupBy { it.declaration.name }
                 .flatMap { if(it.value.size > 1) it.value else emptyList() }
@@ -81,7 +80,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
             .zip()
     }
 
-    private val noDuplicatedMethodsBySignature = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val noDuplicatedMethodsBySignature = SemanticRule { program ->
         program.methods.groupBy { it.declaration.signature() }
             .map { (signature, methods) ->
                 if(methods.size > 1)
@@ -95,7 +94,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
             .zip()
     }
 
-    private val uniqueStructName = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val uniqueStructName = SemanticRule { program ->
         val structNames = program.structs.groupBy { it.declaration.name }
         structNames.map { (name, struct) ->
             if(struct.size > 1)
@@ -138,7 +137,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
             returns.zip()
     }
 
-    private val checkMethodsReturnTypes = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val checkMethodsReturnTypes = SemanticRule { program ->
         program.methods.map { methodContext ->
             when(methodContext.declaration.type) {
                 is Type.Void -> methodContext.block?.let(checkNotReturnsOrEmptyReturns) ?: Validated.Valid
@@ -157,7 +156,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         }.zip()
     }
 
-    private val checkMethodCallsAnExistingMethod = Validation<Context.ProgramContext, SemanticError> { program ->
+    private val checkMethodCallsAnExistingMethod = SemanticRule { program ->
         program.methods.map { method ->
 
             val typeResolver = ContextualTypeResolver(
@@ -172,6 +171,49 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
                     if(program.symbols.findBySignatureOrNull(signature) == null) {
                         it.semanticError("trying to call a method not found signature $signature")
                     } else Validated.Valid
+                }?.zip()
+                ?: Validated.Valid
+        }.zip()
+    }
+
+    private val checkArrayIndexAccess = SemanticRule { program ->
+        program.methods.map { method ->
+            val typeResolver = ContextualTypeResolver(
+                program.symbols,
+                program.structs.map { it.declaration },
+                methodScope(method.declaration.name)
+            )
+
+            method.block?.locations()
+                ?.mapNotNull { if(it is Context.LocationContext.Array) it else null }
+                ?.map {
+                    val expressionType = typeResolver.visitExpression(it.arrayLocation.expression)
+                    if(expressionType !is Type.Int)
+                        it.semanticError("array index access expression must be ${Type.Int} but is $expressionType")
+                    else Validated.Valid
+                }?.zip()
+                ?: Validated.Valid
+        }.zip()
+    }
+
+    private val checkAssignmentType = SemanticRule { program ->
+        program.methods.map { method ->
+
+            val typeResolver = ContextualTypeResolver(
+                program.symbols,
+                program.structs.map { it.declaration },
+                methodScope(method.declaration.name)
+            )
+
+            method.block?.statements
+                ?.filterIsInstance<Context.StatementContext.Assignment>()
+                ?.map { assignment ->
+                    val locationType = typeResolver.visitLocation(assignment.assignmentContext.location)
+                    val expressionType = typeResolver.visitExpression(assignment.assignmentContext.expression)
+
+                    if(locationType != expressionType)
+                        assignment.semanticError("type mismatch expected $locationType but got $expressionType")
+                    else Validated.Valid
                 }?.zip()
                 ?: Validated.Valid
         }.zip()

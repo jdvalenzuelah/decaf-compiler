@@ -44,6 +44,7 @@ internal class ContextualTypeResolver(
 
     fun visitArgument(ctx: ArgContext): Type = visitExpression(ctx.expression)
 
+    //TODO: Nested locations are failing
     fun visitLocation(ctx: LocationContext): Type {
         val (varType, varName) = when(ctx) {
             is LocationContext.Simple -> resolveVariableType(ctx.id) to ctx.id
