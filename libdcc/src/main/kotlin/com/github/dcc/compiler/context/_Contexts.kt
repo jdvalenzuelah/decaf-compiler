@@ -2,6 +2,7 @@ package com.github.dcc.compiler.context
 
 import com.github.dcc.decaf.symbols.SymbolStore
 import com.github.dcc.decaf.symbols.TypeStore
+import kotlin.math.exp
 
 fun Context.ProgramContext.allVariables() = variables + methods
     .flatMap { method -> method.block?.allVariables() ?: emptyList() }
@@ -154,3 +155,31 @@ fun Context.BooleanOperationContext.locations(): List<Context.LocationContext> =
 fun Context.EqOperationContext.locations(): List<Context.LocationContext> = comparison.locations()
 
 fun Context.CondOperationContext.locations(): List<Context.LocationContext> = comparison.locations()
+
+fun Context.ProgramContext.expressions(): List<Context.ExpressionContext> = methods.flatMap { it.expressions() }
+
+fun Context.MethodContext.expressions(): List<Context.ExpressionContext> = block?.expressions() ?: emptyList()
+
+fun Context.BlockContext.expressions(): List<Context.ExpressionContext> = statements.flatMap { it.expressions() }
+
+fun Context.StatementContext.expressions(): List<Context.ExpressionContext> {
+    return when(this) {
+        is Context.StatementContext.Expression -> listOf(expression)
+        is Context.StatementContext.While -> whileContext.expressions()
+        is Context.StatementContext.Block -> blockContext.expressions()
+        is Context.StatementContext.Assignment -> listOf(assignmentContext.expression)
+        is Context.StatementContext.Return -> listOfNotNull(returnContext.expression)
+        is Context.StatementContext.MethodCall -> methodCallContext.expressions()
+        is Context.StatementContext.If -> ifContext.expressions()
+    }
+}
+
+fun Context.WhileContext.expressions(): List<Context.ExpressionContext> = listOf(expression) + block.expressions()
+
+fun Context.MethodCallContext.expressions(): List<Context.ExpressionContext> = args.flatMap { it.expressions() }
+
+fun Context.ArgContext.expressions(): List<Context.ExpressionContext> = listOfNotNull(expression)
+
+fun Context.IfExpressionContext.expressions(): List<Context.ExpressionContext> {
+    return listOf(ifBlockContext.expression) + ifBlockContext.block.expressions() + (elseBlock?.block?.expressions() ?: emptyList())
+}

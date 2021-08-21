@@ -197,6 +197,6 @@ unary_op: SUB | EXCL;
 
 arith_op_sub: ADD | SUB;
 
-arith_op_mul: MUL | DIV;
+arith_op_mul: MUL | DIV | MOD;
 
 literal: BOOL_LITERAL | INT_LITERAL | CHAR_LITERAL;

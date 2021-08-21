@@ -5,7 +5,8 @@ enum class Arithmetic(override val op: String) : Operator {
     SUB("-"),
     ADD("+"),
     MUl("*"),
-    DIV("/");
+    DIV("/"),
+    MOD("%");
 
     companion object {
         fun valueOfOrNull(op: String): Arithmetic? = values().firstOrNull { it.op == op }

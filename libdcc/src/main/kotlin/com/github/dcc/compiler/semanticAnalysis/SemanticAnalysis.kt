@@ -30,6 +30,8 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         +checkMethodCallsAnExistingMethod
         +checkArrayIndexAccess
         +checkAssignmentType
+        +checkIfAndWhileBooleanExpression
+        +checkNonVoidMethodCallsOnExpressions
     }
 
     private val checkArraySize = Validation<Context.VariableContext, SemanticError> {
@@ -177,6 +179,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
     }
 
     private val checkArrayIndexAccess = SemanticRule { program ->
+
         program.methods.map { method ->
             val typeResolver = ContextualTypeResolver(
                 program.symbols,
@@ -187,10 +190,18 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
             method.block?.locations()
                 ?.mapNotNull { if(it is Context.LocationContext.Array) it else null }
                 ?.map {
+                    val varType = typeResolver.visitLocation(it)
                     val expressionType = typeResolver.visitExpression(it.arrayLocation.expression)
-                    if(expressionType !is Type.Int)
+
+                    val accessRes = if(expressionType !is Type.Int)
                         it.semanticError("array index access expression must be ${Type.Int} but is $expressionType")
                     else Validated.Valid
+
+                    val varTypeRes = if(varType !is Type.ArrayUnknownSize && varType !is Type.Array) {
+                        it.semanticError("cannot use index access for variable ${it.arrayLocation.id} of type $varType")
+                    } else Validated.Valid
+
+                    accessRes then varTypeRes
                 }?.zip()
                 ?: Validated.Valid
         }.zip()
@@ -218,5 +229,51 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
                 ?: Validated.Valid
         }.zip()
     }
+
+    private val checkIfAndWhileBooleanExpression = SemanticRule { program ->
+        fun checkIsBoolean(typeResolver: ContextualTypeResolver) = Validation<Context.ExpressionContext, SemanticError> { expr ->
+            val exprType = typeResolver.visitExpression(expr)
+            if(exprType is Type.Boolean)
+                Validated.Valid
+            else
+                expr.semanticError("expected ${Type.Boolean} expression but got $exprType")
+        }
+        program.methods.map { method ->
+            val typeResolver = ContextualTypeResolver(
+                program.symbols,
+                program.structs.map { it.declaration },
+                methodScope(method.declaration.name)
+            )
+
+            method.block?.statements
+                ?.map { statement ->
+                    when(statement) {
+                        is Context.StatementContext.If -> checkIsBoolean(typeResolver)(statement.ifContext.ifBlockContext.expression)
+                        is Context.StatementContext.While -> checkIsBoolean(typeResolver)(statement.whileContext.expression)
+                        else -> Validated.Valid
+                    }
+                }?.zip()
+                ?: Validated.Valid
+        }.zip()
+    }
+
+    private val checkNonVoidMethodCallsOnExpressions = SemanticRule { program ->
+        program.methods.map { method ->
+            val typeResolver = ContextualTypeResolver(
+                program.symbols,
+                program.structs.map { it.declaration },
+                methodScope(method.declaration.name)
+            )
+            method.expressions().map { expr ->
+                val type = typeResolver.visitExpression(expr)
+                if(type is Type.Void)
+                    expr.semanticError("methods used in expressions must have a return type!")
+                else Validated.Valid
+            }.zip()
+        }.zip()
+    }
+
+    //arith_op_sub arith_op_mul
+
 
 }

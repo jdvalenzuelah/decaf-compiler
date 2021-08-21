@@ -1,7 +1,7 @@
 package com.github.v60
 
+import com.github.dcc.compiler.Error.SemanticError
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
-import com.github.dcc.compiler.semanticAnalysis.SemanticError
 import com.github.dcc.parser.DecafLexer
 import com.github.dcc.parser.DecafParser
 import com.github.v60.ui.actionBar
