@@ -10,7 +10,8 @@ fun Context.ProgramContext.allVariables() = variables + methods
 fun Context.BlockContext.allVariables(): List<Context.VariableContext> = variables + statements.flatMap {
     when(it) {
         is Context.StatementContext.If -> {
-            it.ifContext.ifBlockContext.block.allVariables() + (it.ifContext.elseBlock?.block?.allVariables() ?: emptyList())
+            it.ifContext.ifBlockContext.block.allVariables() +
+                    (it.ifContext.elseBlock?.block?.allVariables() ?: emptyList())
         }
         is Context.StatementContext.While -> it.whileContext.block.allVariables()
         is Context.StatementContext.Block -> it.blockContext.allVariables()
@@ -72,7 +73,8 @@ fun Context.BlockContext.methodCalls(): List<Context.MethodCallContext> {
     return statements.flatMap { statement ->
         when(statement) {
             is Context.StatementContext.MethodCall -> listOf(statement.methodCallContext)
-            is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.methodCalls() + (statement.ifContext.elseBlock?.block?.methodCalls() ?: emptyList())
+            is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.methodCalls() +
+                    (statement.ifContext.elseBlock?.block?.methodCalls() ?: emptyList())
             is Context.StatementContext.While -> statement.whileContext.block.methodCalls()
             is Context.StatementContext.Block -> statement.blockContext.methodCalls()
             is Context.StatementContext.Assignment -> statement.assignmentContext.expression.methodCalls()
@@ -86,7 +88,8 @@ fun Context.BlockContext.locations(): List<Context.LocationContext> {
     return statements.flatMap { statement ->
         when(statement) {
             is Context.StatementContext.MethodCall -> statement.methodCallContext.locations()
-            is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.locations() + (statement.ifContext.elseBlock?.block?.locations() ?: emptyList())
+            is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.locations() +
+                    (statement.ifContext.elseBlock?.block?.locations() ?: emptyList())
             is Context.StatementContext.While -> statement.whileContext.block.locations()
             is Context.StatementContext.Block -> statement.blockContext.locations()
             is Context.StatementContext.Assignment -> statement.assignmentContext.expression.locations()
@@ -102,7 +105,8 @@ fun Context.MethodCallContext.locations(): List<Context.LocationContext> {
 
 fun Context.ExpressionContext.locations(): List<Context.LocationContext> {
     return when(this) {
-        is Context.ExpressionContext.Location -> listOf(locationContext) + listOfNotNull(locationContext.subLocation?.location)
+        is Context.ExpressionContext.Location -> listOf(locationContext) +
+                listOfNotNull(locationContext.subLocation?.location)
         is Context.ExpressionContext.Equality -> equalityContext.locations()
         is Context.ExpressionContext.MethodCall -> methodCallContext.locations()
         is Context.ExpressionContext.Literal -> emptyList()
@@ -181,5 +185,21 @@ fun Context.MethodCallContext.expressions(): List<Context.ExpressionContext> = a
 fun Context.ArgContext.expressions(): List<Context.ExpressionContext> = listOfNotNull(expression)
 
 fun Context.IfExpressionContext.expressions(): List<Context.ExpressionContext> {
-    return listOf(ifBlockContext.expression) + ifBlockContext.block.expressions() + (elseBlock?.block?.expressions() ?: emptyList())
+    return listOf(ifBlockContext.expression) + ifBlockContext.block.expressions() +
+            (elseBlock?.block?.expressions() ?: emptyList())
 }
+
+fun Context.EqualityContext.terms(): List<Context.TermContext> = comparison.terms() +
+        eqOperations.flatMap { it.terms() } + condOperations.flatMap { it.terms() }
+
+fun Context.ComparisonContext.terms(): List<Context.TermContext> = listOf(term) + operations.flatMap { it.terms() }
+
+fun Context.BooleanOperationContext.terms(): List<Context.TermContext> = listOf(term)
+
+fun Context.EqOperationContext.terms(): List<Context.TermContext> = comparison.terms()
+
+fun Context.CondOperationContext.terms(): List<Context.TermContext> =  comparison.terms()
+
+fun Context.TermContext.factors(): List<Context.FactorContext>  = listOf(factor) + operations.map { it.factor }
+
+fun Context.FactorContext.unary(): List<Context.UnaryContext> = listOf(unary) + operations.map { it.unary }

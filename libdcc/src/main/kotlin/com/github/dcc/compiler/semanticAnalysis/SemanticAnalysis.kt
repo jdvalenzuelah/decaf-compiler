@@ -6,6 +6,10 @@ import com.github.dcc.compiler.resolvers.ContextualTypeResolver
 import com.github.dcc.decaf.enviroment.Scope
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.enviroment.methodScope
+import com.github.dcc.decaf.operators.Arithmetic
+import com.github.dcc.decaf.operators.Condition
+import com.github.dcc.decaf.operators.Operator
+import com.github.dcc.decaf.operators.Unary
 import com.github.dcc.decaf.symbols.findBySignatureOrNull
 import com.github.dcc.decaf.symbols.signature
 import com.github.dcc.decaf.types.Type
@@ -32,6 +36,9 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         +checkAssignmentType
         +checkIfAndWhileBooleanExpression
         +checkNonVoidMethodCallsOnExpressions
+        +checkArithOpType
+        +checkCondOpType
+        +checkNegateType
     }
 
     private val checkArraySize = Validation<Context.VariableContext, SemanticError> {
@@ -140,33 +147,21 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
     }
 
     private val checkMethodsReturnTypes = SemanticRule { program ->
-        program.methods.map { methodContext ->
-            when(methodContext.declaration.type) {
-                is Type.Void -> methodContext.block?.let(checkNotReturnsOrEmptyReturns) ?: Validated.Valid
+        program.mapMethods { typeResolver, method ->
+            when(method.declaration.type) {
+                is Type.Void -> method.block?.let(checkNotReturnsOrEmptyReturns) ?: Validated.Valid
                 else -> {
-                    val typeResolver = ContextualTypeResolver(
-                        program.symbols,
-                        program.structs.map { it.declaration },
-                        methodScope(methodContext.declaration.name)
-                    )
-                    if (methodContext.block != null)
-                        checkMethodReturnType(methodContext.declaration.type, typeResolver)(methodContext.block)
+                    if (method.block != null)
+                        checkMethodReturnType(method.declaration.type, typeResolver)(method.block)
                     else
-                        methodContext.semanticError("method ${methodContext.declaration.name} return type ${methodContext.declaration.type} has no body")
+                        method.semanticError("method ${method.declaration.name} return type ${method.declaration.type} has no body")
                 } //check return type
             }
         }.zip()
     }
 
     private val checkMethodCallsAnExistingMethod = SemanticRule { program ->
-        program.methods.map { method ->
-
-            val typeResolver = ContextualTypeResolver(
-                program.symbols,
-                program.structs.map { it.declaration },
-                methodScope(method.declaration.name)
-            )
-
+        program.mapMethods { typeResolver, method ->
             method.block?.methodCalls()
                 ?.map {
                     val signature = typeResolver.getMethodCallSignature(it)
@@ -180,12 +175,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
 
     private val checkArrayIndexAccess = SemanticRule { program ->
 
-        program.methods.map { method ->
-            val typeResolver = ContextualTypeResolver(
-                program.symbols,
-                program.structs.map { it.declaration },
-                methodScope(method.declaration.name)
-            )
+        program.mapMethods { typeResolver, method ->
 
             method.block?.locations()
                 ?.mapNotNull { if(it is Context.LocationContext.Array) it else null }
@@ -208,14 +198,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
     }
 
     private val checkAssignmentType = SemanticRule { program ->
-        program.methods.map { method ->
-
-            val typeResolver = ContextualTypeResolver(
-                program.symbols,
-                program.structs.map { it.declaration },
-                methodScope(method.declaration.name)
-            )
-
+        program.mapMethods { typeResolver, method ->
             method.block?.statements
                 ?.filterIsInstance<Context.StatementContext.Assignment>()
                 ?.map { assignment ->
@@ -238,13 +221,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
             else
                 expr.semanticError("expected ${Type.Boolean} expression but got $exprType")
         }
-        program.methods.map { method ->
-            val typeResolver = ContextualTypeResolver(
-                program.symbols,
-                program.structs.map { it.declaration },
-                methodScope(method.declaration.name)
-            )
-
+        program.mapMethods { typeResolver, method ->
             method.block?.statements
                 ?.map { statement ->
                     when(statement) {
@@ -258,12 +235,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
     }
 
     private val checkNonVoidMethodCallsOnExpressions = SemanticRule { program ->
-        program.methods.map { method ->
-            val typeResolver = ContextualTypeResolver(
-                program.symbols,
-                program.structs.map { it.declaration },
-                methodScope(method.declaration.name)
-            )
+        program.mapMethods { typeResolver, method ->
             method.expressions().map { expr ->
                 val type = typeResolver.visitExpression(expr)
                 if(type is Type.Void)
@@ -273,7 +245,72 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         }.zip()
     }
 
-    //arith_op_sub arith_op_mul
+    private val checkArithOpType = SemanticRule { program ->
+        program.mapMethods { typeResolver, method ->
+            method.block?.expressions()?.filterIsInstance<Context.ExpressionContext.Equality>()
+                ?.flatMap { it.equalityContext.terms() }
+                ?.flatMap {
+                    if(it.operations.isNotEmpty() || it.factor.operations.isNotEmpty())
+                        it.factors()
+                    else emptyList()
+                }?.flatMap { it.unary() }
+                ?.map { unary ->
+                    val type = typeResolver.visitUnary(unary)
+                    if(type !is Type.Int) {
+                        unary.semanticError("operator type for operations ${stringValues<Arithmetic>()} must be of type ${Type.Int} but got $type")
+                    } else
+                        Validated.Valid
+                }?.zip()
+                ?: Validated.Valid
+        }.zip()
+    }
+
+    private val checkCondOpType = SemanticRule { program ->
+        program.mapMethods { typeResolver, method ->
+            method.block?.expressions()?.filterIsInstance<Context.ExpressionContext.Equality>()
+                ?.filter { it.equalityContext.condOperations.isNotEmpty() }
+                ?.map { it.equalityContext }
+                ?.flatMap { listOf(it.comparison) + it.condOperations.map { op -> op.comparison } }
+                ?.map { comp ->
+                    val type = typeResolver.visitComparison(comp)
+                    if(type !is Type.Boolean)
+                        comp.semanticError("operator type for operations ${stringValues<Condition>()} must be of type ${Type.Boolean} but got $type")
+                    else Validated.Valid
+                }?.zip()
+                ?: Validated.Valid
+        }.zip()
+    }
+
+    private val checkNegateType = SemanticRule { program ->
+        program.mapMethods { typeResolver, method ->
+            method.block?.expressions()?.filterIsInstance<Context.ExpressionContext.Equality>()
+                ?.flatMap { it.equalityContext.terms() }
+                ?.flatMap { it.factors() }
+                ?.flatMap { it.unary() }
+                ?.map { unary ->
+                    if(unary is Context.UnaryContext.Operation && unary.operator == Unary.EXCL) {
+                        val type = typeResolver.visitUnary(unary)
+                        if(type !is Type.Boolean)
+                            unary.semanticError("operator type for operations ${Unary.EXCL.op} must be of type ${Type.Boolean} but got $type")
+                        else Validated.Valid
+                    } else Validated.Valid
+                }?.zip()
+                ?: Validated.Valid
+        }.zip()
+    }
 
 
+}
+
+private inline fun <reified T> stringValues() where T: Enum<T>, T : Operator = enumValues<T>().joinToString { it.op }
+
+internal fun <O> Context.ProgramContext.mapMethods(op: (ContextualTypeResolver, Context.MethodContext) -> O ): List<O> {
+    return methods.map { method ->
+        val typeResolver = ContextualTypeResolver(
+            symbols,
+            structs.map { it.declaration },
+            methodScope(method.declaration.name)
+        )
+        op(typeResolver, method)
+    }
 }

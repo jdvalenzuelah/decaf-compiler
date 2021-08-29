@@ -9,6 +9,7 @@ import com.github.dcc.decaf.symbols.signature
 import com.github.validation.Validated
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
+import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.max
 
@@ -32,10 +33,10 @@ object Prettify {
         return buf.toString()
     }
 
-    fun semanticErrors(err: Validated.Invalid<SemanticError>, compilerContext: CompilerContext): String {
+    fun semanticErrors(err: Validated.Invalid<SemanticError>, file: File): String {
         val buf = StringBuilder()
         err.forEach {
-            buf.append(semanticError(compilerContext.file.path, it.e))
+            buf.append(semanticError(file.path, it.e))
             buf.appendLine()
         }
         return buf.toString()

@@ -8,10 +8,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.dcc.cli.ui.Prettify
 import com.github.dcc.compiler.CompilerContext
-import com.github.dcc.compiler.context.allVariables
 import com.github.dcc.compiler.context.symbols
 import com.github.dcc.compiler.context.types
-import com.github.dcc.compiler.resolvers.ProgramContextResolver
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
 import com.github.validation.Validated
 
@@ -46,7 +44,7 @@ object DCC : CliktCommand() {
             echo(Prettify.tree(compilerContext.parser.program(), compilerContext.parser.ruleNames.toList()))
         }
 
-        val programContext = ProgramContextResolver.resolve(compilerContext)
+        val programContext = compilerContext.programContext
 
         if(printSymbolTable) {
             echo(Prettify.symbols(programContext.symbols))
@@ -58,7 +56,7 @@ object DCC : CliktCommand() {
 
         when(val semanticAnalysis = SemanticAnalysis(programContext)) {
             is Validated.Valid -> echo("Passed!")
-            is Validated.Invalid -> echo(Prettify.semanticErrors(semanticAnalysis, compilerContext), err = true)
+            is Validated.Invalid -> echo(Prettify.semanticErrors(semanticAnalysis, file), err = true)
         }
 
     }

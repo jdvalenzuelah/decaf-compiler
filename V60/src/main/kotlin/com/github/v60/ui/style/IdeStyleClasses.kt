@@ -44,4 +44,8 @@ class IdeStyleClasses : AttributeBuilder() {
     val left get() = apply { classes("left") }
 
     val scrollY get() = apply { classes("scroll-y") }
+
+    val codeEditor get() = apply { classes("code-editor") }
+
+    val error get() = apply { classes("error") }
 }
