@@ -113,7 +113,7 @@ array_decl: var_type ID OBRACKET INT_LITERAL CBRACKET;
 
 /* array_decl_no_size: var_type ID OBRACKET CBRACKET; */
 
-struct_decl: STRUCT ID OCURLY (var_decl)* CCURLY;
+struct_decl: STRUCT ID OCURLY (var_decl)* CCURLY SEMICOLON?;
 
 var_type: INT | CHAR | BOOLEAN | (STRUCT ID) | VOID /* | struct_decl */;
 

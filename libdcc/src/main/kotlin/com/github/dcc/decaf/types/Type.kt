@@ -20,13 +20,13 @@ sealed class Type {
         val size: kotlin.Int,
         val type: Type,
     ): Type() {
-        override fun toString(): String = "${type}Array[$size]"
+        override fun toString(): String = "${type}[$size]"
     }
 
     data class ArrayUnknownSize(
         val type: Type,
     ): Type() {
-        override fun toString(): String = "${type}Array[]"
+        override fun toString(): String = "${type}[]"
     }
 
     override fun toString(): String = this::class.simpleName ?: super.toString()
