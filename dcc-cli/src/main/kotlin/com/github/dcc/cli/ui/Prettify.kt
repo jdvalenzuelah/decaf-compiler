@@ -47,7 +47,7 @@ object Prettify {
 
         val parserContext = err.context.parserContext
         val msg = "semantic error: ${err.message}"
-        buf.append(error("$fileName:${parserContext!!.start.line}:${parserContext.start.charPositionInLine}", msg))
+        buf.append(error("$fileName:${parserContext?.start?.line}:${parserContext?.start?.charPositionInLine}", msg))
         return buf.toString()
     }
 

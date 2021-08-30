@@ -132,7 +132,7 @@ internal class ContextualTypeResolver(
 
          return when {
              parentType is Type.Struct &&  sub == null -> {
-                 val struct = types.first { it.name == parentType.name }
+                 val struct = types.first { it.name == parentType.name } //TODO: Should result in semantic error not in exception (use firstOrNull)
                  struct.properties.first { it.name == varName }.type
              }
              parentType is Type.Struct && sub != null -> resolveSubLocationType(varName, sub)

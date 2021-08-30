@@ -1,6 +1,7 @@
 package com.github.dcc.compiler.resolvers
 
 import com.github.dcc.decaf.enviroment.Scope
+import com.github.dcc.decaf.enviroment.child
 import com.github.dcc.decaf.symbols.*
 import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.*
@@ -41,13 +42,18 @@ internal class DeclarationResolver(
     }
 
     override fun visitMethod_sign(ctx: DecafParser.Method_signContext?): Declaration.Method {
-        return Declaration.Method(
-            name = ctx!!.ID()!!.text,
+        val id = ctx!!.ID()!!.text
+        val tempScope = currentScope
+        currentScope = currentScope.child(id)
+        val declaration =  Declaration.Method(
+            name = id,
             scope = currentScope,
             type = typeResolver.visitMethod_sign(ctx)!!,
             parameters = ctx.parameter().map(::visitParameter),
             context = ctx,
         )
+        currentScope = tempScope
+        return declaration
     }
 
     override fun visitParameter(ctx: DecafParser.ParameterContext?): Declaration.Variable {
