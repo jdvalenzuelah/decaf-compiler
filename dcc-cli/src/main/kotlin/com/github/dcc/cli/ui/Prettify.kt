@@ -1,12 +1,15 @@
 package com.github.dcc.cli.ui
 
-import com.github.dcc.compiler.CompilerContext
+import com.github.dcc.cli.DCC
+import com.github.dcc.compiler.CompilationResult
+import com.github.dcc.compiler.Error
 import com.github.dcc.compiler.Error.SemanticError
+import com.github.dcc.compiler.Error.SyntaxError
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.Declaration
-import com.github.dcc.decaf.symbols.Signature
 import com.github.dcc.decaf.symbols.signature
 import com.github.validation.Validated
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
 import java.io.File
@@ -33,22 +36,36 @@ object Prettify {
         return buf.toString()
     }
 
-    fun semanticErrors(err: Validated.Invalid<SemanticError>, file: File): String {
+    fun compilationResult(result: CompilationResult, file: File): String {
+        return when(result) {
+            is Validated.Valid -> "${file.path}: Build passed!"
+            is Validated.Invalid -> errors(result, file)
+        }
+    }
+
+    private fun errors(err: Validated.Invalid<Error>, file: File): String {
         val buf = StringBuilder()
         err.forEach {
-            buf.append(semanticError(file.path, it.e))
+            val error = when(val ce = it.e) {
+                is SemanticError -> semanticError(file.path, ce)
+                is SyntaxError -> syntaxError(file.path, ce)
+            }
+            buf.append(error)
             buf.appendLine()
         }
         return buf.toString()
     }
 
     private fun semanticError(fileName: String, err: SemanticError): String {
-        val buf = StringBuilder()
+        return error(fileParsingLocation(fileName, err.context.parserContext), "semantic error: ${err.message}")
+    }
 
-        val parserContext = err.context.parserContext
-        val msg = "semantic error: ${err.message}"
-        buf.append(error("$fileName:${parserContext?.start?.line}:${parserContext?.start?.charPositionInLine}", msg))
-        return buf.toString()
+    private fun syntaxError(fileName: String, err: SyntaxError): String {
+        return error(fileParsingLocation(fileName, err.context?.parserContext), "syntax error: ${err.message}")
+    }
+
+    private fun fileParsingLocation(fileName: String, parserContext: ParserRuleContext?): String {
+        return "$fileName:${parserContext?.start?.line}:${parserContext?.start?.charPositionInLine}"
     }
 
     private fun error(location: String, errorMsg: String): String {

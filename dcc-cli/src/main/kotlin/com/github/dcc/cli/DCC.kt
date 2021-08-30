@@ -19,6 +19,9 @@ object DCC : CliktCommand() {
     private val file by argument(help = "file to compile")
         .file(mustExist = true, mustBeReadable = true)
 
+    private val justParser by option("-E", "--parser-only", help = "Runs just the parser")
+        .flag(default = false)
+
     private val printParseTree by option("-dt", "--dump-tree", help = "Prints parse tree in unix's tree utility style")
         .flag(default = false)
 
@@ -54,9 +57,10 @@ object DCC : CliktCommand() {
             echo(Prettify.types(programContext.types))
         }
 
-        when(val semanticAnalysis = SemanticAnalysis(programContext)) {
-            is Validated.Valid -> echo("Passed!")
-            is Validated.Invalid -> echo(Prettify.semanticErrors(semanticAnalysis, file), err = true)
+        if(!justParser) {
+            val result = compilerContext.compileSource()
+            val isError = result is Validated.Invalid
+            echo(Prettify.compilationResult(result, file), err = isError)
         }
 
     }

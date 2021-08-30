@@ -47,7 +47,9 @@ class CompilerContext(
 
 
     fun compileSource(): CompilationResult {
-       return  SemanticAnalysis(programContext) then syntaxErrorListener.errors()
+        val syntaxErrors = syntaxErrorListener.errors()
+        val semanticAnalysis = SemanticAnalysis(programContext)
+        return  semanticAnalysis then syntaxErrors
     }
 
 }
