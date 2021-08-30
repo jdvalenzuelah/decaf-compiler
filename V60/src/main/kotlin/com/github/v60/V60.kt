@@ -38,7 +38,7 @@ class V60(
                             actionBarContext.open.retrieveFile { file ->
                                 fileName.value = file.fileName
                                 code.value = file.base64Content
-                                    .replace("data:application/octet-stream;base64,", "")
+                                    .replace("data:.*;base64,".toRegex(), "")
                                     .decodeBase64()
                             }
                         }

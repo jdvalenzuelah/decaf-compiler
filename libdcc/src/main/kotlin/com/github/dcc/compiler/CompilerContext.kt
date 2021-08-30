@@ -2,9 +2,11 @@ package com.github.dcc.compiler
 
 import com.github.dcc.compiler.resolvers.ProgramContextResolver
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
+import com.github.dcc.compiler.syntaxAnalysis.SyntaxErrorListener
 import com.github.dcc.parser.DecafLexer
 import com.github.dcc.parser.DecafParser
 import com.github.validation.Validated
+import com.github.validation.then
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.File
@@ -19,12 +21,21 @@ class CompilerContext(
     constructor(file: File) : this(file.inputStream())
     constructor(code: String): this(code.byteInputStream())
 
-    val inputStream = ANTLRInputStream(input)
-    val tokenStream = CommonTokenStream(DecafLexer(inputStream))
+    private val syntaxErrorListener = SyntaxErrorListener()
+
+    private val inputStream = ANTLRInputStream(input)
+    private val lexer = DecafLexer(inputStream).apply {
+        removeErrorListeners()
+        addErrorListener(syntaxErrorListener)
+    }
+    private val tokenStream = CommonTokenStream(lexer)
 
     val parser: DecafParser get() {
         tokenStream.reset()
-        return DecafParser(tokenStream)
+        return DecafParser(tokenStream).apply {
+            removeErrorListeners()
+            addErrorListener(syntaxErrorListener)
+        }
     }
 
     val programContext by lazy {
@@ -36,7 +47,7 @@ class CompilerContext(
 
 
     fun compileSource(): CompilationResult {
-        return SemanticAnalysis(programContext)
+       return  SemanticAnalysis(programContext) then syntaxErrorListener.errors()
     }
 
 }

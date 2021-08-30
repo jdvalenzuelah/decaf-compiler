@@ -24,6 +24,7 @@ fun ElementCreator<*>.console(fileName: String, buildOutput: Validated<Error>): 
                     buildOutput.forEach {
                         when(val error = it.e) {
                             is SemanticError -> semanticError(error)
+                            is Error.SyntaxError -> syntaxError(error)
                         }
                     }
                 }
@@ -32,9 +33,13 @@ fun ElementCreator<*>.console(fileName: String, buildOutput: Validated<Error>): 
     }
 }
 
-private val Error.line: Int get() = context.parserContext.start.line
-private val Error.charPos: Int get() = context.parserContext.start.charPositionInLine
+private val SemanticError.line: Int get() = context.parserContext.start.line
+private val SemanticError.charPos: Int get() = context.parserContext.start.charPositionInLine
 
 fun ElementCreator<*>.semanticError(error: SemanticError) {
     p(ide.error).text("line  ${error.line}:${error.charPos} ${error.message}")
+}
+
+fun ElementCreator<*>.syntaxError(error: Error.SyntaxError) {
+    p(ide.error).text(error.message)
 }
