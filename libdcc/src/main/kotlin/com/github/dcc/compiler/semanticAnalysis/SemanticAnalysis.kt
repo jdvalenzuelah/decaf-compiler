@@ -128,7 +128,16 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
     }
 
     private fun checkMethodReturnType(type: Type, typeResolver: ContextualTypeResolver) =  Validation<Context.BlockContext, SemanticError> { block ->
-        val returns = block.statements.filterIsInstance<Context.StatementContext.Return>()
+        val returns = block.statements
+            .flatMap {
+                when(it) {
+                    is Context.StatementContext.If -> it.ifContext.ifBlockContext.block.statements + (it.ifContext.elseBlock?.block?.statements ?: emptyList())
+                    is Context.StatementContext.While -> it.whileContext.block.statements
+                    is Context.StatementContext.Block -> it.blockContext.statements
+                    else -> listOf(it)
+                }
+            }
+            .filterIsInstance<Context.StatementContext.Return>()
             .map {
                 if(it.returnContext.expression == null)
                     it.semanticError("empty return expression expected expression type $type")
@@ -180,7 +189,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
             method.block?.locations()
                 ?.mapNotNull { if(it is Context.LocationContext.Array) it else null }
                 ?.map {
-                    val varType = typeResolver.visitLocation(it)
+                    val varType = typeResolver.resolveVariableType(it.arrayLocation.id)
                     val expressionType = typeResolver.visitExpression(it.arrayLocation.expression)
 
                     val accessRes = if(expressionType !is Type.Int)
@@ -205,8 +214,18 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
                     val locationType = typeResolver.visitLocation(assignment.assignmentContext.location)
                     val expressionType = typeResolver.visitExpression(assignment.assignmentContext.expression)
 
-                    if(locationType != expressionType)
-                        assignment.semanticError("type mismatch expected $locationType but got $expressionType")
+                    val locationTypeToEval =
+                        if(assignment.assignmentContext.location is Context.LocationContext.Array && locationType is Type.Array) {
+                            locationType.type
+                        } else locationType
+
+                    val expressionTypeToEval =
+                    if(assignment.assignmentContext.location is Context.LocationContext.Array && expressionType is Type.Array) {
+                        expressionType.type
+                    } else expressionType
+
+                    if(locationTypeToEval != expressionTypeToEval)
+                        assignment.semanticError("type mismatch expected $locationTypeToEval but got $expressionTypeToEval")
                     else Validated.Valid
                 }?.zip()
                 ?: Validated.Valid

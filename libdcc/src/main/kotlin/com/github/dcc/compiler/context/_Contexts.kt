@@ -5,7 +5,9 @@ import com.github.dcc.decaf.symbols.TypeStore
 import kotlin.math.exp
 
 fun Context.ProgramContext.allVariables() = variables + methods
-    .flatMap { method -> method.block?.allVariables() ?: emptyList() }
+    .flatMap { method ->
+        (method.block?.allVariables() ?: emptyList()) + method.declaration.parameters.map { Context.VariableContext(it, null) } //TODO: avoid using null
+    }
 
 fun Context.BlockContext.allVariables(): List<Context.VariableContext> = variables + statements.flatMap {
     when(it) {
@@ -148,6 +150,7 @@ fun Context.PrimaryContext.locations(): List<Context.LocationContext> {
 fun Context.SymbolPriContext.locations(): List<Context.LocationContext> {
     return when(this) {
         is Context.SymbolPriContext.Literal -> emptyList()
+        is Context.SymbolPriContext.MethodCall -> methodCall.locations()
         is Context.SymbolPriContext.Location -> listOf(location)
     }
 }

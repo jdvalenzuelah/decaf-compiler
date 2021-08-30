@@ -215,6 +215,9 @@ class BlockContextResolver internal constructor(
         return ctx.literal()
             ?.let(::visitLiteral)
             ?.let { Context.SymbolPriContext.Literal(it, ctx) }
+            ?: ctx.method_call()
+                ?.let(::visitMethod_call)
+                ?.let { Context.SymbolPriContext.MethodCall(it, ctx) }
             ?: ctx.location()
                 .let(::visitLocation)
                 .let { Context.SymbolPriContext.Location(it, ctx) }

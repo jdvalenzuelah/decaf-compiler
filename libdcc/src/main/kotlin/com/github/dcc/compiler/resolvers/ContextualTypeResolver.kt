@@ -2,6 +2,7 @@ package com.github.dcc.compiler.resolvers
 
 import com.github.dcc.compiler.context.Context
 import com.github.dcc.compiler.context.Context.*
+import com.github.dcc.compiler.context.locations
 import com.github.dcc.decaf.enviroment.Scope
 import com.github.dcc.decaf.symbols.*
 import com.github.dcc.decaf.types.Type
@@ -38,7 +39,6 @@ internal class ContextualTypeResolver(
 
     fun visitMethodCall(ctx: MethodCallContext): Type {
         val callSignature = getMethodCallSignature(ctx)
-
         return symbols.findBySignatureOrNull(callSignature)?.type ?: Type.Nothing
     }
 
@@ -57,7 +57,14 @@ internal class ContextualTypeResolver(
             varType
     }
 
-    fun visitLocationArray(ctx: LocationArrayContext): Type  = resolveVariableType(ctx.id)
+    fun visitLocationArray(ctx: LocationArrayContext): Type  {
+        return when(val type = resolveVariableType(ctx.id)) {
+            is Type.Array -> type.type
+            is Type.ArrayUnknownSize -> type.type
+            else -> type
+        }
+
+    }
 
     fun visitEquality(ctx: EqualityContext): Type {
         /* cond and eq op result is boolean, operand types must be checked by semantic analysis */
@@ -102,12 +109,13 @@ internal class ContextualTypeResolver(
         return when(ctx) {
             is SymbolPriContext.Literal -> visitLiteral(ctx.literal)
             is SymbolPriContext.Location -> visitLocation(ctx.location)
+            is SymbolPriContext.MethodCall -> visitMethodCall(ctx.methodCall)
         }
     }
 
     fun visitLiteral(ctx: LiteralContext): Type = ctx.literal.type
 
-    private fun resolveVariableType(name: String): Type {
+    fun resolveVariableType(name: String): Type {
         return symbols.firstOrNull { it is Declaration.Variable && it.name == name }
             ?.type
             ?: Type.Nothing

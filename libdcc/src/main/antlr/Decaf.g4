@@ -119,7 +119,7 @@ var_type: INT | CHAR | BOOLEAN | (STRUCT ID) | VOID /* | struct_decl */;
 
 method_decl: method_sign block;
 
-method_sign: method_type ID OPARENTHESIS ((parameter) (COMMA parameter)*)? CPARENTHESIS;
+method_sign: method_type ID OPARENTHESIS (((parameter) (COMMA parameter)*)? | VOID) CPARENTHESIS;
 
 method_type: INT | CHAR | BOOLEAN | VOID;
 
@@ -159,7 +159,7 @@ method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 
 arg: expression;
 
-expression: equality | location | method_call | literal;
+expression: method_call | equality | location | literal;
 
 equality: comparison eq_operation* cond_operation*;
 
@@ -179,7 +179,7 @@ factor: unary mul_div_op*;
 
 primary: symbol_pri | OPARENTHESIS expression CPARENTHESIS;
 
-symbol_pri: literal | location;
+symbol_pri: literal | location | method_call;
 
 mul_div_op: arith_op_mul unary;
 

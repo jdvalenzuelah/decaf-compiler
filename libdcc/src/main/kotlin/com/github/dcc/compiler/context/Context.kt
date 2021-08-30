@@ -8,7 +8,7 @@ import com.github.dcc.parser.DecafParser
 import org.antlr.v4.runtime.ParserRuleContext
 
 sealed class Context(
-    open val parserContext: ParserRuleContext
+    open val parserContext: ParserRuleContext?
 ) {
 
     data class ProgramContext(
@@ -21,7 +21,7 @@ sealed class Context(
 
     data class VariableContext(
         val declaration: Declaration.Variable,
-        override val parserContext: DecafParser.Var_declContext
+        override val parserContext: DecafParser.Var_declContext?
     ): Context(parserContext)
 
     data class StructContext(
@@ -259,6 +259,11 @@ sealed class Context(
 
         data class Location(
             val location: LocationContext,
+            override val parserContext: DecafParser.Symbol_priContext
+        ): SymbolPriContext(parserContext)
+
+        data class MethodCall(
+            val methodCall: MethodCallContext,
             override val parserContext: DecafParser.Symbol_priContext
         ): SymbolPriContext(parserContext)
     }
