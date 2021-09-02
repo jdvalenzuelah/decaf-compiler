@@ -1,9 +1,8 @@
 package com.github.dcc.compiler.resolvers
 
-import com.github.dcc.compiler.context.Context
 import com.github.dcc.compiler.context.Context.*
-import com.github.dcc.compiler.context.locations
 import com.github.dcc.decaf.enviroment.Scope
+import com.github.dcc.decaf.enviroment.contains
 import com.github.dcc.decaf.symbols.*
 import com.github.dcc.decaf.types.Type
 
@@ -44,17 +43,7 @@ internal class ContextualTypeResolver(
     fun visitArgument(ctx: ArgContext): Type = visitExpression(ctx.expression)
 
     //TODO: Nested locations are failing
-    fun visitLocation(ctx: LocationContext): Type {
-        val (varType, varName) = when(ctx) {
-            is LocationContext.Simple -> resolveVariableType(ctx.id) to ctx.id
-            is LocationContext.Array -> visitLocationArray(ctx.arrayLocation) to ctx.arrayLocation.id
-        }
-
-        return if(varType is Type.Struct && ctx.subLocation != null)
-            resolveSubLocationType(varName, ctx.subLocation!!)
-        else
-            varType
-    }
+    fun visitLocation(ctx: LocationContext): Type = resolveVariableType(ctx, null)
 
     fun visitLocationArray(ctx: LocationArrayContext): Type  {
         return when(val type = resolveVariableType(ctx.id)) {
@@ -115,27 +104,38 @@ internal class ContextualTypeResolver(
     fun visitLiteral(ctx: LiteralContext): Type = ctx.literal.type
 
     fun resolveVariableType(name: String): Type {
-        return symbols.firstOrNull { it is Declaration.Variable && it.name == name }
-            ?.type
+        return symbols.filter { it is Declaration.Variable && it.name == name && it.scope == scope }
+            .ifEmpty {symbols.filter { it is Declaration.Variable && it.name == name && scope.contains(it.scope) } }
+            .firstOrNull()?.type
             ?: Type.Nothing
     }
 
-    private fun resolveSubLocationType(parent: String, subProp: SubLocationContext): Type {
-        val parentType = resolveVariableType(parent)
-
-        val varName = when(subProp.location) {
-            is LocationContext.Simple -> subProp.location.id
-            is LocationContext.Array -> subProp.location.arrayLocation.id
+    private fun resolveVariableType(ctx: LocationContext, structContext: Declaration.Struct?): Type {
+        val varName = when(ctx) {
+            is LocationContext.Simple -> ctx.id
+            is LocationContext.Array -> ctx.arrayLocation.id
         }
-        val sub = subProp.location.subLocation
 
-         return when {
-             parentType is Type.Struct &&  sub == null -> {
-                 val struct = types.first { it.name == parentType.name } //TODO: Should result in semantic error not in exception (use firstOrNull)
-                 struct.properties.first { it.name == varName }.type
-             }
-             parentType is Type.Struct && sub != null -> resolveSubLocationType(varName, sub)
-             else -> parentType
-         }
+        val varType = if(structContext == null) {
+            when(ctx) {
+                is LocationContext.Simple -> resolveVariableType(ctx.id)
+                is LocationContext.Array -> visitLocationArray(ctx.arrayLocation)
+            }
+        } else {
+            structContext.properties.firstOrNull { it.name == varName }
+                ?.type
+                ?: Type.Nothing
+        }
+
+        val pureType = when(varType) {
+            is Type.Array -> varType.type
+            is Type.ArrayUnknownSize -> varType.type
+            else -> varType
+        }
+
+        return if(pureType is Type.Struct && ctx.subLocation != null) {
+            val struct = types.firstOrNull { it.type == pureType }
+            resolveVariableType(ctx.subLocation!!.location, struct)
+        } else pureType
     }
 }

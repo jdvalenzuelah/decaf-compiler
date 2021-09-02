@@ -35,4 +35,14 @@ fun Scope.child(name: String): Scope = Scope.Local(name, this)
 
 fun Scope.Companion.methodScope(name: String): Scope = Scope.Global.child(name)
 
-fun Scope.contains(other: Scope) =  other.lineageAsString().startsWith(this.lineageAsString())
+fun Scope.contains(other: Scope): Boolean {
+    val parentLineage = this.lineage()
+    val otherLineage = other.lineage()
+
+    val matchedLineage = otherLineage.takeWhile {
+        (parentLineage.isNotEmpty() && parentLineage.first == it)
+            .also { matches -> if(matches) parentLineage.removeFirst() }
+    }
+
+    return parentLineage.isEmpty() || matchedLineage == otherLineage
+}
