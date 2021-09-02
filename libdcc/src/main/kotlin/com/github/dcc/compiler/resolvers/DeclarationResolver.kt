@@ -47,7 +47,6 @@ internal class DeclarationResolver(
         currentScope = currentScope.child(id)
         val declaration =  Declaration.Method(
             name = id,
-            scope = currentScope,
             type = typeResolver.visitMethod_sign(ctx)!!,
             parameters = ctx.parameter().map(::visitParameter),
             context = ctx,

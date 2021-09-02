@@ -2,7 +2,6 @@ package com.github.v60
 
 import com.github.dcc.compiler.CompilationResult
 import com.github.dcc.compiler.CompilerContext
-import com.github.dcc.compiler.Error
 import com.github.v60.ui.actionBar
 import com.github.v60.ui.console
 import com.github.v60.ui.editor

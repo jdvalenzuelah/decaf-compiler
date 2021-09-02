@@ -31,7 +31,6 @@ internal class ContextualTypeResolver(
         }
     }
 
-    //TODO: extract this
     fun getMethodCallSignature(ctx: MethodCallContext): Signature = Signature(
         name = ctx.name,
         parameters = ctx.args.map(::visitArgument)

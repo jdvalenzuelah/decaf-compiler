@@ -25,7 +25,7 @@ class CompilerContext(
 
     private val inputStream = ANTLRInputStream(input)
     private val lexer = DecafLexer(inputStream).apply {
-        removeErrorListeners()
+        //removeErrorListeners()
         addErrorListener(syntaxErrorListener)
     }
     private val tokenStream = CommonTokenStream(lexer)
@@ -33,7 +33,7 @@ class CompilerContext(
     val parser: DecafParser get() {
         tokenStream.reset()
         return DecafParser(tokenStream).apply {
-            removeErrorListeners()
+            //removeErrorListeners()
             addErrorListener(syntaxErrorListener)
         }
     }

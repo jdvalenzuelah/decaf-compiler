@@ -62,7 +62,6 @@ object DCC : CliktCommand() {
             val isError = result is Validated.Invalid
             echo(Prettify.compilationResult(result, file), err = isError)
         }
-
     }
 
 }

@@ -1,14 +1,14 @@
 package com.github.dcc.decaf.types
 
-import org.antlr.v4.runtime.ParserRuleContext
-
-sealed class Type {
-
+sealed class Type(
+    val isPrimitive: kotlin.Boolean = false
+) {
+    
     object Nothing : Type()
     object Void : Type()
-    object Boolean : Type()
-    object Int : Type()
-    object Char : Type()
+    object Boolean : Type(true)
+    object Int : Type(true)
+    object Char : Type(true)
 
     data class Struct(
         val name: String,
@@ -30,5 +30,4 @@ sealed class Type {
     }
 
     override fun toString(): String = this::class.simpleName ?: super.toString()
-
 }

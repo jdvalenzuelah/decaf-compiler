@@ -1,5 +1,7 @@
 package com.github.validation
 
+import com.sun.org.apache.xpath.internal.operations.Bool
+
 fun interface Validation<in I, out E> : (I) -> Validated<E>
 
 infix fun <E> Validated<E>.then(next: Validated<E>): Validated<E> {
@@ -39,8 +41,17 @@ class ValidationChainBuilder<I, E> {
 
 }
 
-fun <I, E> validation(init: ValidationChainBuilder<I, E>.() -> Unit): Validation<I, E> = ValidationChainBuilder<I, E>()
+inline fun <I, E> validation(init: ValidationChainBuilder<I, E>.() -> Unit): Validation<I, E> = ValidationChainBuilder<I, E>()
     .apply(init)
     .build()
 
-fun <I, E> validated(test: I, init: ValidationChainBuilder<I, E>.() -> Unit) = validation(init).invoke(test)
+inline fun <I, E> validated(test: I, init: ValidationChainBuilder<I, E>.() -> Unit) = validation(init).invoke(test)
+
+inline fun <E> validate(test: Boolean, lazyError: () -> Validated.Invalid<E>): Validated<E> = if(test) Validated.Valid else lazyError()
+
+inline fun <T, E> Iterable<T>.validateAll(validation: (T) -> Boolean, lazyError: (T) -> Validated.Invalid<E>): Validated<E> {
+    for (el in this) {
+        if(!validation(el)) return lazyError(el)
+    }
+    return Validated.Valid
+}

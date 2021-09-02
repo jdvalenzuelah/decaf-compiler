@@ -21,10 +21,9 @@ sealed class Declaration(
     data class Method(
         override val name: String,
         override val type: Type,
-        override val scope: Scope,
         val parameters: List<Variable>,
         override val context: ParserRuleContext,
-    ) : Declaration(name, type, scope, context)
+    ) : Declaration(name, type, Scope.Global, context)
 
     data class Struct(
         override val name: String,

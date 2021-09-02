@@ -4,12 +4,11 @@ import com.github.dcc.compiler.Error.SemanticError
 import com.github.dcc.compiler.context.*
 import com.github.dcc.compiler.resolvers.ContextualTypeResolver
 import com.github.dcc.decaf.enviroment.Scope
+import com.github.dcc.decaf.enviroment.contains
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.enviroment.methodScope
-import com.github.dcc.decaf.operators.Arithmetic
-import com.github.dcc.decaf.operators.Condition
-import com.github.dcc.decaf.operators.Operator
-import com.github.dcc.decaf.operators.Unary
+import com.github.dcc.decaf.operators.*
+import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.findBySignatureOrNull
 import com.github.dcc.decaf.symbols.signature
 import com.github.dcc.decaf.types.Type
@@ -39,6 +38,9 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         +checkArithOpType
         +checkCondOpType
         +checkNegateType
+        +checkLocationWasDeclaredBeforeUsage
+        +checkRelOperatorsAreInt
+        +checkEqOperatorsArePrimitive
     }
 
     private val checkArraySize = Validation<Context.VariableContext, SemanticError> {
@@ -131,7 +133,7 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         val returns = block.statements
             .flatMap {
                 when(it) {
-                    is Context.StatementContext.If -> it.ifContext.ifBlockContext.block.statements + (it.ifContext.elseBlock?.block?.statements ?: emptyList())
+                    is Context.StatementContext.If -> it.ifContext.ifBlockContext.block.statements + (it.ifContext.elseBlock?.block?.statements.orEmpty())
                     is Context.StatementContext.While -> it.whileContext.block.statements
                     is Context.StatementContext.Block -> it.blockContext.statements
                     else -> listOf(it)
@@ -318,6 +320,75 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
         }.zip()
     }
 
+    private val checkLocationWasDeclaredBeforeUsage = SemanticRule { program ->
+        val variables = program.allVariables()
+        program.mapMethods { _, method ->
+            val allLocations = method.block?.locations().orEmpty()
+            val scope = Scope.methodScope(method.declaration.name)
+            allLocations.map {
+                val id = when(it) {
+                    is Context.LocationContext.Array -> it.arrayLocation.id
+                    is Context.LocationContext.Simple -> it.id
+                }
+                val variable = variables.findVariable(id, scope)
+                if(variable == null)
+                    it.semanticError("use of undeclared variable $id")
+                else {
+                    val declaredLine = variable.parserContext?.start?.line ?: 0
+                    val usage = it.parserContext.start.line
+                    if(declaredLine > usage) it.semanticError("variable $id used before declaration") else Validated.Valid
+                }
+            }.zip()
+        }.zip()
+    }
+
+    private val checkRelOperatorsAreInt = SemanticRule { program ->
+        program.mapMethods { typeResolver, method ->
+            method.block?.expressions()?.filterIsInstance<Context.ExpressionContext.Equality>()
+                ?.flatMap { it.equalityContext.comparisson() }
+                ?.filter { it.operations.isNotEmpty() }
+                ?.map {  comparison ->
+                    val applicableOperations = comparison.operations.filter {
+                        it.operator is Context.BoolOpContext.RelOp
+                    }
+                    val terms = listOf(comparison.term) +  applicableOperations.map { it.term }
+                    terms.map {
+                        val type = typeResolver.visitTerm(it)
+                        validate(type is Type.Int) {
+                            it.semanticError("operator type for operations ${stringValues<Comparison>()} must be of type ${Type.Int} but got $type")
+                        }
+                    }.zip()
+                }.orEmpty()
+                .zip()
+        }.zip()
+    }
+
+    private val checkEqOperatorsArePrimitive = SemanticRule { program ->
+        program.mapMethods { typeResolver, method ->
+            method.block?.expressions()?.filterIsInstance<Context.ExpressionContext.Equality>()
+                ?.flatMap { it.equalityContext.comparisson() }
+                ?.filter { it.operations.isNotEmpty() }
+                ?.map {  comparison ->
+                    val applicableOperations = comparison.operations.filter {
+                        it.operator is Context.BoolOpContext.EqOp
+                    }
+                    val terms = listOf(comparison.term) +  applicableOperations.map { it.term }
+                    terms.map {
+                        val type = typeResolver.visitTerm(it)
+                        validate(type.isPrimitive) {
+                            it.semanticError("operator type for operations ${stringValues<Equality>()} must be of either type ${listOf(Type.Char, Type.Int, Type.Boolean)} but got $type")
+                        }
+                    }.zip() then terms.validateAll(
+                        { typeResolver.visitTerm(it) == typeResolver.visitTerm(comparison.term) },
+                        { it.semanticError("operation ${stringValues<Equality>()} between types ${typeResolver.visitTerm(it)} and ${ typeResolver.visitTerm(comparison.term)} not applicable") }
+                    )
+
+
+                }.orEmpty()
+                .zip()
+        }.zip()
+    }
+
 
 }
 
@@ -328,8 +399,14 @@ internal fun <O> Context.ProgramContext.mapMethods(op: (ContextualTypeResolver, 
         val typeResolver = ContextualTypeResolver(
             symbols,
             structs.map { it.declaration },
-            methodScope(method.declaration.name)
+            Scope.methodScope(method.declaration.name)
         )
         op(typeResolver, method)
     }
+}
+
+fun List<Context.VariableContext>.findVariable(name: String, scope: Scope): Context.VariableContext? {
+    return filter { it.declaration.name == name && it.declaration.scope == scope }
+        .ifEmpty { filter { it.declaration.name == name && it.declaration.scope.contains(scope) } }
+        .firstOrNull()
 }

@@ -1,5 +1,7 @@
 package com.github.dcc.decaf.symbols
 
+import com.github.dcc.decaf.enviroment.Scope
+import com.github.dcc.decaf.enviroment.contains
 import com.github.dcc.decaf.types.Type
 
 typealias SequentialStore<T> = Collection<T>

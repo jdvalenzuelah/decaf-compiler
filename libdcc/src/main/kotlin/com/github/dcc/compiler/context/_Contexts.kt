@@ -6,14 +6,14 @@ import kotlin.math.exp
 
 fun Context.ProgramContext.allVariables() = variables + methods
     .flatMap { method ->
-        (method.block?.allVariables() ?: emptyList()) + method.declaration.parameters.map { Context.VariableContext(it, null) } //TODO: avoid using null
+        (method.block?.allVariables().orEmpty()) + method.declaration.parameters.map { Context.VariableContext(it, null) } //TODO: avoid using null
     }
 
 fun Context.BlockContext.allVariables(): List<Context.VariableContext> = variables + statements.flatMap {
     when(it) {
         is Context.StatementContext.If -> {
             it.ifContext.ifBlockContext.block.allVariables() +
-                    (it.ifContext.elseBlock?.block?.allVariables() ?: emptyList())
+                    (it.ifContext.elseBlock?.block?.allVariables().orEmpty())
         }
         is Context.StatementContext.While -> it.whileContext.block.allVariables()
         is Context.StatementContext.Block -> it.blockContext.allVariables()
@@ -23,6 +23,7 @@ fun Context.BlockContext.allVariables(): List<Context.VariableContext> = variabl
         is Context.StatementContext.Return -> emptyList()
     }
 }
+
 
 val Context.ProgramContext.symbols : SymbolStore
     get() = allVariables().map { it.declaration } + methods.map { it.declaration }
@@ -76,12 +77,12 @@ fun Context.BlockContext.methodCalls(): List<Context.MethodCallContext> {
         when(statement) {
             is Context.StatementContext.MethodCall -> listOf(statement.methodCallContext)
             is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.methodCalls() +
-                    (statement.ifContext.elseBlock?.block?.methodCalls() ?: emptyList())
+                    (statement.ifContext.elseBlock?.block?.methodCalls().orEmpty())
             is Context.StatementContext.While -> statement.whileContext.block.methodCalls()
             is Context.StatementContext.Block -> statement.blockContext.methodCalls()
             is Context.StatementContext.Assignment -> statement.assignmentContext.expression.methodCalls()
             is Context.StatementContext.Expression -> statement.expression.methodCalls()
-            is Context.StatementContext.Return -> statement.returnContext.expression?.methodCalls() ?: emptyList()
+            is Context.StatementContext.Return -> statement.returnContext.expression?.methodCalls().orEmpty()
         }
     }
 }
@@ -91,12 +92,12 @@ fun Context.BlockContext.locations(): List<Context.LocationContext> {
         when(statement) {
             is Context.StatementContext.MethodCall -> statement.methodCallContext.locations()
             is Context.StatementContext.If -> statement.ifContext.ifBlockContext.block.locations() +
-                    (statement.ifContext.elseBlock?.block?.locations() ?: emptyList())
+                    (statement.ifContext.elseBlock?.block?.locations().orEmpty())
             is Context.StatementContext.While -> statement.whileContext.block.locations()
             is Context.StatementContext.Block -> statement.blockContext.locations()
             is Context.StatementContext.Assignment -> statement.assignmentContext.expression.locations()
             is Context.StatementContext.Expression -> statement.expression.locations()
-            is Context.StatementContext.Return -> statement.returnContext.expression?.locations() ?: emptyList()
+            is Context.StatementContext.Return -> statement.returnContext.expression?.locations().orEmpty()
         }
     }
 }
@@ -165,7 +166,7 @@ fun Context.CondOperationContext.locations(): List<Context.LocationContext> = co
 
 fun Context.ProgramContext.expressions(): List<Context.ExpressionContext> = methods.flatMap { it.expressions() }
 
-fun Context.MethodContext.expressions(): List<Context.ExpressionContext> = block?.expressions() ?: emptyList()
+fun Context.MethodContext.expressions(): List<Context.ExpressionContext> = block?.expressions().orEmpty()
 
 fun Context.BlockContext.expressions(): List<Context.ExpressionContext> = statements.flatMap { it.expressions() }
 
@@ -189,7 +190,7 @@ fun Context.ArgContext.expressions(): List<Context.ExpressionContext> = listOfNo
 
 fun Context.IfExpressionContext.expressions(): List<Context.ExpressionContext> {
     return listOf(ifBlockContext.expression) + ifBlockContext.block.expressions() +
-            (elseBlock?.block?.expressions() ?: emptyList())
+            (elseBlock?.block?.expressions().orEmpty())
 }
 
 fun Context.EqualityContext.terms(): List<Context.TermContext> = comparison.terms() +
@@ -206,3 +207,18 @@ fun Context.CondOperationContext.terms(): List<Context.TermContext> =  compariso
 fun Context.TermContext.factors(): List<Context.FactorContext>  = listOf(factor) + operations.map { it.factor }
 
 fun Context.FactorContext.unary(): List<Context.UnaryContext> = listOf(unary) + operations.map { it.unary }
+
+fun Context.EqualityContext.comparisson(): List<Context.ComparisonContext> = listOf(comparison) +
+        eqOperations.map { it.comparison } +
+        condOperations.map { it.comparison }
+
+
+fun Context.LocationContext.flatten(): Collection<Context.LocationContext> {
+    val locations = mutableListOf(this)
+    var nextLocation = this.subLocation?.location
+    while (nextLocation != null) {
+        locations.add(nextLocation)
+        nextLocation = nextLocation.subLocation?.location
+    }
+    return locations
+}

@@ -5,6 +5,9 @@ import java.util.*
 sealed class Scope(
     open val parent: Scope
 ) {
+
+    companion object
+
     object Global : Scope(Global) {
         override fun toString(): String = this::class.simpleName ?: super.toString()
     }
@@ -30,4 +33,6 @@ fun Scope.lineageAsString(): String = this.lineage().joinToString(separator = "@
 
 fun Scope.child(name: String): Scope = Scope.Local(name, this)
 
-fun methodScope(name: String): Scope = Scope.Global.child(name)
+fun Scope.Companion.methodScope(name: String): Scope = Scope.Global.child(name)
+
+fun Scope.contains(other: Scope) =  other.lineageAsString().startsWith(this.lineageAsString())

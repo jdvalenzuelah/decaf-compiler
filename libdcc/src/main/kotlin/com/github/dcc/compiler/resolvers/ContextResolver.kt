@@ -2,16 +2,12 @@ package com.github.dcc.compiler.resolvers
 
 import com.github.dcc.compiler.CompilerContext
 import com.github.dcc.compiler.context.Context
-import com.github.dcc.compiler.resolvers.DeclarationResolver
-import com.github.dcc.compiler.resolvers.StaticTypeResolver
 import com.github.dcc.decaf.enviroment.Scope
 import com.github.dcc.decaf.enviroment.child
 import com.github.dcc.decaf.literals.Literal
 import com.github.dcc.decaf.operators.*
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
-import kotlin.math.exp
-
 
 class ProgramContextResolver private constructor(
     private val declarationResolver: DeclarationResolver,
