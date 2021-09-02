@@ -213,12 +213,24 @@ fun Context.EqualityContext.comparisson(): List<Context.ComparisonContext> = lis
         condOperations.map { it.comparison }
 
 
-fun Context.LocationContext.flatten(): Collection<Context.LocationContext> {
-    val locations = mutableListOf(this)
-    var nextLocation = this.subLocation?.location
-    while (nextLocation != null) {
-        locations.add(nextLocation)
-        nextLocation = nextLocation.subLocation?.location
-    }
-    return locations
+fun Context.MethodContext.statements(): List<Context.StatementContext> = block?.statements
+    ?.flatMap { it.statements() }.orEmpty()
+
+fun Context.StatementContext.statements() = when(this) {
+    is Context.StatementContext.Block -> blockContext.statements
+    is Context.StatementContext.While -> whileContext.block.statements
+    is Context.StatementContext.If -> ifContext.ifBlockContext.block.statements + ifContext.elseBlock?.block?.statements.orEmpty()
+    else -> listOf(this)
+}
+
+fun Context.MethodContext.assignments(): List<Context.AssignmentContext> = block?.assignments().orEmpty()
+
+fun Context.BlockContext.assignments(): List<Context.AssignmentContext> = statements.flatMap { it.assignments() }
+
+fun Context.StatementContext.assignments() = when(this) {
+    is Context.StatementContext.Block -> blockContext.assignments()
+    is Context.StatementContext.While -> whileContext.block.assignments()
+    is Context.StatementContext.If -> ifContext.ifBlockContext.block.assignments() + ifContext.elseBlock?.block?.assignments().orEmpty()
+    is Context.StatementContext.Assignment -> listOf(assignmentContext)
+    else -> emptyList()
 }

@@ -54,8 +54,10 @@ class V60(
 
                         editor(ide.codeEditor, code)
 
-                        render(compilationResult) { errorsList ->
-                            console(fileName.value, errorsList)
+                        render(fileName) { file ->
+                            render(compilationResult) { errorsList ->
+                                console(file, errorsList)
+                            }
                         }
                     }
                 }

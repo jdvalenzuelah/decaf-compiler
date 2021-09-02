@@ -133,9 +133,13 @@ internal class ContextualTypeResolver(
             else -> varType
         }
 
-        return if(pureType is Type.Struct && ctx.subLocation != null) {
-            val struct = types.firstOrNull { it.type == pureType }
-            resolveVariableType(ctx.subLocation!!.location, struct)
-        } else pureType
+        return when {
+            pureType is Type.Struct && ctx.subLocation != null -> {
+                val struct = types.firstOrNull { it.type == pureType }
+                resolveVariableType(ctx.subLocation!!.location, struct)
+            }
+            ctx.subLocation != null -> resolveVariableType(ctx.subLocation!!.location, null)
+            else -> pureType
+        }
     }
 }

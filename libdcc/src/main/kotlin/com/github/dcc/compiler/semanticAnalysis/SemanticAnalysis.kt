@@ -210,27 +210,25 @@ class SemanticAnalysis private constructor() : DecafBaseVisitor<Validated<Semant
 
     private val checkAssignmentType = SemanticRule { program ->
         program.mapMethods { typeResolver, method ->
-            method.block?.statements
-                ?.filterIsInstance<Context.StatementContext.Assignment>()
-                ?.map { assignment ->
-                    val locationType = typeResolver.visitLocation(assignment.assignmentContext.location)
-                    val expressionType = typeResolver.visitExpression(assignment.assignmentContext.expression)
+            method.assignments()
+                .map { assignment ->
+                    val locationType = typeResolver.visitLocation(assignment.location)
+                    val expressionType = typeResolver.visitExpression(assignment.expression)
 
                     val locationTypeToEval =
-                        if(assignment.assignmentContext.location is Context.LocationContext.Array && locationType is Type.Array) {
+                        if(assignment.location is Context.LocationContext.Array && locationType is Type.Array) {
                             locationType.type
                         } else locationType
 
                     val expressionTypeToEval =
-                    if(assignment.assignmentContext.location is Context.LocationContext.Array && expressionType is Type.Array) {
+                    if(assignment.location is Context.LocationContext.Array && expressionType is Type.Array) {
                         expressionType.type
                     } else expressionType
 
                     if(locationTypeToEval != expressionTypeToEval)
                         assignment.semanticError("type mismatch expected $locationTypeToEval but got $expressionTypeToEval")
                     else Validated.Valid
-                }?.zip()
-                ?: Validated.Valid
+                }.zip()
         }.zip()
     }
 
