@@ -6,8 +6,6 @@ import kweb.DivElement
 import kweb.ElementCreator
 import kweb.div
 import kweb.i
-import kweb.state.KVar
-import kweb.state.render
 
 fun ElementCreator<*>.fileStatus(
     fileName: String

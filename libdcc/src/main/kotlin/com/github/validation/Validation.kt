@@ -1,7 +1,5 @@
 package com.github.validation
 
-import com.sun.org.apache.xpath.internal.operations.Bool
-
 fun interface Validation<in I, out E> : (I) -> Validated<E>
 
 infix fun <E> Validated<E>.then(next: Validated<E>): Validated<E> {
