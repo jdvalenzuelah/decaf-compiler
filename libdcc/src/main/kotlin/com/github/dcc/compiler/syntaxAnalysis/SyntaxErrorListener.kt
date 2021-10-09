@@ -7,7 +7,7 @@ import org.antlr.v4.runtime.*
 
 class SyntaxErrorListener : ANTLRErrorListener by BaseErrorListener() {
 
-    private val errors = mutableListOf<Validated.Invalid<Error>>()
+    private val errors = mutableListOf<Validated.Invalid<Error.SyntaxError>>()
 
     internal fun errors(): Validated<Error> {
         return errors.zip()

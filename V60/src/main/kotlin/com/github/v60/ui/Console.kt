@@ -1,5 +1,6 @@
 package com.github.v60.ui
 
+import com.github.dcc.compiler.Compiler
 import com.github.dcc.compiler.Error
 import com.github.dcc.compiler.Error.SemanticError
 import com.github.v60.ui.fontAwesome.fontAwesome
@@ -7,10 +8,10 @@ import com.github.v60.ui.style.ide
 import com.github.validation.Validated
 import kweb.*
 
-fun ElementCreator<*>.console(fileName: String, buildOutput: Validated<Error>): DivElement {
+fun ElementCreator<*>.console(fileName: String, buildOutput: Compiler.CompilationResult): DivElement {
     return div(ide.console) {
         div(ide.buildStatus) {
-            if(buildOutput is Validated.Valid) {
+            if(buildOutput is Compiler.CompilationResult.Success) {
                 div(ide.successBuildIcon.left) { i(fontAwesome.fas.check) }
                 div(ide.left).text("Build $fileName: successful")
             } else {
@@ -20,12 +21,15 @@ fun ElementCreator<*>.console(fileName: String, buildOutput: Validated<Error>): 
         }
         div(ide.buildOutput) {
             div(ide.scrollY) {
-                if(buildOutput is Validated.Invalid) {
-                    buildOutput.forEach {
-                        when(val error = it.e) {
-                            is SemanticError -> semanticError(error)
-                            is Error.SyntaxError -> syntaxError(error)
-                        }
+                val erros = when(buildOutput) {
+                    is Compiler.CompilationResult.Success -> emptyList()
+                    is Compiler.CompilationResult.SemanticError -> buildOutput.errors
+                    is Compiler.CompilationResult.SyntaxError -> buildOutput.errors
+                }
+                erros.forEach {
+                    when(val error = it.e) {
+                        is SemanticError -> semanticError(error)
+                        is Error.SyntaxError -> syntaxError(error)
                     }
                 }
             }
@@ -33,8 +37,8 @@ fun ElementCreator<*>.console(fileName: String, buildOutput: Validated<Error>): 
     }
 }
 
-private val SemanticError.line: Int get() = context.parserContext!!.start.line
-private val SemanticError.charPos: Int get() = context.parserContext!!.start.charPositionInLine
+private val SemanticError.line: Int get() = context.start.line
+private val SemanticError.charPos: Int get() = context.start.charPositionInLine
 
 fun ElementCreator<*>.semanticError(error: SemanticError) {
     p(ide.error).text("line  ${error.line}:${error.charPos} ${error.message}")

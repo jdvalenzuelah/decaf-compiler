@@ -30,4 +30,7 @@ sealed class Type(
     }
 
     override fun toString(): String = this::class.simpleName ?: super.toString()
+
+    fun noSize() = if(this is Array) ArrayUnknownSize(type) else this
+
 }

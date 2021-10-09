@@ -7,11 +7,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.dcc.cli.ui.Prettify
-import com.github.dcc.compiler.CompilerContext
-import com.github.dcc.compiler.context.symbols
-import com.github.dcc.compiler.context.types
-import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
-import com.github.validation.Validated
+import com.github.dcc.compiler.Compiler
 
 
 object DCC : CliktCommand() {
@@ -25,11 +21,9 @@ object DCC : CliktCommand() {
     private val printParseTree by option("-dt", "--dump-tree", help = "Prints parse tree in unix's tree utility style")
         .flag(default = false)
 
-    //TODO
     private val printSymbolTable by option("-ds", "--dump-symbols", help = "Prints symbol table in plain text")
         .flag(default = false)
 
-    //TODO
     private val printTypeTable by option("-dtt", "--dump-types", help = "Prints struct table in plain text")
         .flag(default = false)
 
@@ -40,26 +34,26 @@ object DCC : CliktCommand() {
 
 
     override fun run() {
-        val compilerContext = CompilerContext(file)
+        val compiler = Compiler(file)
 
         if(printParseTree) {
-            compilerContext.reset() // make sure stream is at start
-            echo(Prettify.tree(compilerContext.parser.program(), compilerContext.parser.ruleNames.toList()))
+            compiler.reset() // make sure stream is at start
+            echo(Prettify.tree(compiler.parser.program(), compiler.parser.ruleNames.toList()))
         }
 
-        val programContext = compilerContext.programContext
 
         if(printSymbolTable) {
-            echo(Prettify.symbols(programContext.symbols))
+            echo(Prettify.methods(compiler.symbols.methods))
+            echo(Prettify.variables(compiler.symbols.symbolTable))
         }
 
         if(printTypeTable) {
-            echo(Prettify.types(programContext.types))
+            echo(Prettify.types(compiler.symbols.types))
         }
 
         if(!justParser) {
-            val result = compilerContext.compileSource()
-            val isError = result is Validated.Invalid
+            val result = compiler.compileSource()
+            val isError = result !is Compiler.CompilationResult.Success
             echo(Prettify.compilationResult(result, file), err = isError)
         }
     }

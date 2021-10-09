@@ -1,10 +1,10 @@
 package com.github.dcc.cli.ui
 
-import com.github.dcc.cli.DCC
-import com.github.dcc.compiler.CompilationResult
+import com.github.dcc.compiler.Compiler
 import com.github.dcc.compiler.Error
 import com.github.dcc.compiler.Error.SemanticError
 import com.github.dcc.compiler.Error.SyntaxError
+import com.github.dcc.compiler.symbols.variables.SymbolTable
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.signature
@@ -36,17 +36,18 @@ object Prettify {
         return buf.toString()
     }
 
-    fun compilationResult(result: CompilationResult, file: File): String {
+    fun compilationResult(result: Compiler.CompilationResult, file: File): String {
         return when(result) {
-            is Validated.Valid -> "${file.path}: Build passed!"
-            is Validated.Invalid -> errors(result, file)
+            is Compiler.CompilationResult.Success -> "${file.path}: Build passed!"
+            is Compiler.CompilationResult.SyntaxError -> errors(result.errors, file)
+            is Compiler.CompilationResult.SemanticError -> errors(result.errors, file)
         }
     }
 
-    private fun errors(err: Validated.Invalid<Error>, file: File): String {
+    private fun errors(err: Iterable<Validated.Invalid<Error>>, file: File): String {
         val buf = StringBuilder()
-        err.forEach {
-            val error = when(val ce = it.e) {
+        err.forEach { error ->
+            val error = when(val ce = error.e) {
                 is SemanticError -> semanticError(file.path, ce)
                 is SyntaxError -> syntaxError(file.path, ce)
             }
@@ -57,11 +58,11 @@ object Prettify {
     }
 
     private fun semanticError(fileName: String, err: SemanticError): String {
-        return error(fileParsingLocation(fileName, err.context.parserContext), "semantic error: ${err.message}")
+        return error(fileParsingLocation(fileName, err.context), "semantic error: ${err.message}")
     }
 
     private fun syntaxError(fileName: String, err: SyntaxError): String {
-        return error(fileParsingLocation(fileName, err.context?.parserContext), "syntax error: ${err.message}")
+        return error(fileParsingLocation(fileName, err.context), "syntax error: ${err.message}")
     }
 
     private fun fileParsingLocation(fileName: String, parserContext: ParserRuleContext?): String {
@@ -72,30 +73,42 @@ object Prettify {
         return "$location: $errorMsg"
     }
 
-    fun symbols(symbols: Iterable<Declaration>): String {
-        val symbolRows = symbols.map {
+    fun methods(symbols: Iterable<Declaration.Method>): String {
+        val symbolRows = symbols.mapIndexed { index, it ->
             mapOf(
+                "index" to index.toString(),
                 "name" to it.name,
-                "symbol type" to if(it is Declaration.Method) "method" else "variable",
-                "scope" to it.scope.lineageAsString(),
                 "type" to it.type.toString(),
-                "signature" to if(it is Declaration.Method) it.signature().toString() else "-"
+                "signature" to it.signature().toString()
             )
         }
-        return table(listOf("name", "symbol type", "scope", "type", "signature"), symbolRows)
+        return table(listOf("index","name", "signature"), symbolRows)
+    }
+
+    fun variables(symbolTable: SymbolTable): String {
+        val variables = symbolTable.allSymbols().mapIndexed { index, variable ->
+            mapOf(
+                "index" to index.toString(),
+                "name" to variable.name,
+                "type" to variable.type.toString(),
+                "scope" to variable.scope.lineageAsString()
+            )
+        }
+
+        return table(listOf("index", "name", "type", "scope"), variables)
     }
 
     fun types(types: Iterable<Declaration.Struct>): String {
-        val typeRows = types.map {
+        val typeRows = types.mapIndexed { index, it ->
             mapOf(
+                "index" to index.toString(),
                 "name" to it.name,
-                "scope" to it.scope.lineageAsString(),
                 "type" to it.type.toString(),
-                "properties" to it.properties.joinToString { p -> "${p.name} : ${p.type}" },
+                "properties" to it.properties.mapIndexed { i, p -> "[$i] - ${p.name} : ${p.type}" }.joinToString(),
             )
         }
 
-        return table(listOf("name", "scope", "type", "properties"), typeRows)
+        return table(listOf("index","name", "type", "properties"), typeRows)
     }
 
     private fun table(cols: List<String>, rows: List<Map<String, String>>): String {

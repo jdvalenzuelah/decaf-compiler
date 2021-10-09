@@ -6,9 +6,11 @@ import com.github.dcc.decaf.types.Type
 
 typealias SequentialStore<T> = Collection<T>
 
-typealias SymbolStore = SequentialStore<Declaration>
+typealias SymbolStore = SequentialStore<Declaration.Variable>
 
 typealias TypeStore = SequentialStore<Declaration.Struct>
+
+typealias MethodStore = SequentialStore<Declaration.Method>
 
 fun SymbolStore.findBySignatureOrNull(_signature: Signature): Declaration.Method? {
     val parameters = _signature.parameters

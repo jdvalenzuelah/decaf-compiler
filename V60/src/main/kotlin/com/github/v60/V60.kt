@@ -1,7 +1,6 @@
 package com.github.v60
 
-import com.github.dcc.compiler.CompilationResult
-import com.github.dcc.compiler.CompilerContext
+import com.github.dcc.compiler.Compiler
 import com.github.v60.ui.actionBar
 import com.github.v60.ui.console
 import com.github.v60.ui.editor
@@ -24,7 +23,7 @@ class V60(
 
     private val code = KVar("")
     private val fileName = KVar("")
-    private val compilationResult = KVar<CompilationResult>(Validated.Valid)
+    private val compilationResult = KVar<Compiler.CompilationResult>(Compiler.CompilationResult.Success)
 
     init {
         Kweb(port = port, debug = debug, plugins = listOf(ideStyle, fontAwesomePlugin)) {
@@ -43,7 +42,7 @@ class V60(
                         }
 
                         actionBarContext.build.on.click {
-                            val compiler = CompilerContext(code.value)
+                            val compiler = Compiler(code.value)
                             compilationResult.value = compiler.compileSource()
 
                         }
@@ -55,8 +54,8 @@ class V60(
                         editor(ide.codeEditor, code)
 
                         render(fileName) { file ->
-                            render(compilationResult) { errorsList ->
-                                console(file, errorsList)
+                            render(compilationResult) { result ->
+                                console(file, result)
                             }
                         }
                     }

@@ -1,12 +1,17 @@
 package com.github.dcc.compiler.semanticAnalysis
 
 import com.github.dcc.compiler.Error
-import com.github.dcc.compiler.context.Context
+import com.github.dcc.decaf.symbols.Declaration
 import com.github.validation.Validated
-import com.github.validation.Validation
+import com.github.validation.zip
+import org.antlr.v4.runtime.ParserRuleContext
 
-typealias SemanticRule = Validation<Context.ProgramContext, Error.SemanticError>
+fun semanticError(msg: String, ctx: ParserRuleContext): Error.SemanticError = Error.SemanticError(msg, ctx)
 
-fun Context.semanticError(message: String) = Validated.Invalid(
-    Error.SemanticError(message, this)
-)
+fun check(test: Boolean, error: () -> Error.SemanticError) = if(test) Validated.Valid else Validated.Invalid(error())
+
+fun require(test: Boolean, error: () -> Validated<Error>): Validated<Error> = if(test) Validated.Valid else error()
+
+fun <T> Iterable<T>.semanticError(msg: (T) -> String):  Validated<Error.SemanticError> where T : Declaration = map {
+    Validated.Invalid(Error.SemanticError(msg(it), it.context))
+}.zip()

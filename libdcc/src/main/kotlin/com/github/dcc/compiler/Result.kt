@@ -1,11 +1,11 @@
 package com.github.dcc.compiler
 
-import com.github.dcc.compiler.context.Context
+import org.antlr.v4.runtime.ParserRuleContext
 
 sealed class Result
 
 sealed class Error(
-    open val context: Context?
+    open val context: ParserRuleContext?
 ) : Result() {
 
     data class SyntaxError(
@@ -14,7 +14,7 @@ sealed class Error(
 
     data class SemanticError(
         val message: String,
-        override val context: Context
-    ): Error(context)
+        override val context: ParserRuleContext
+    ): Error(null)
 
 }
