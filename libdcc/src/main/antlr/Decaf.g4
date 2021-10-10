@@ -159,33 +159,14 @@ method_call: ID OPARENTHESIS ((arg) (COMMA arg)*)? CPARENTHESIS;
 
 arg: expression;
 
-expression: method_call | equality | location | literal;
-
-equality: comparison eq_operation* cond_operation*;
-
-eq_operation: eq_op comparison;
-
-cond_operation: cond_op comparison;
-
-comparison: term boolean_operation*;
-
-boolean_operation: bool_ret_op term;
-
-term: factor sub_add_op*;
-
-unary: unary_op unary | primary;
-
-factor: unary mul_div_op*;
-
-primary: symbol_pri | OPARENTHESIS expression CPARENTHESIS;
-
-symbol_pri: literal | location | method_call;
-
-mul_div_op: arith_op_mul unary;
-
-sub_add_op: arith_op_sub factor;
-
-bool_ret_op: rel_op | eq_op;
+expression: method_call | location | literal
+            | expression arith_op_mul expression
+            | expression arith_op_sub expression
+            | expression rel_op expression
+            | expression eq_op expression
+            | expression cond_op expression
+            | unary_op expression
+            | OPARENTHESIS expression CPARENTHESIS;
 
 rel_op: GT | LT | GTE | LTE;
 

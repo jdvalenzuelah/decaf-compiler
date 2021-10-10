@@ -223,157 +223,46 @@ object SemanticRules {
         }
 
         override fun visitExpression(ctx: DecafParser.ExpressionContext): Validated<Error> {
-            when {
+            return when {
                 ctx.method_call() != null -> {
                     val type = contextualTypeResolver.visitMethod_call(ctx.method_call())
                     check(type !is Type.Void) {
                         semanticError("method calls on expressions must return a value", ctx)
                     }.then(visitMethod_call(ctx.method_call()))
                 }
-                ctx.equality() != null -> visitEquality(ctx.equality())
                 ctx.location() != null -> visitLocation(ctx.location())
                 ctx.literal() != null -> visitLiteral(ctx.literal())
-                else -> Validated.Valid
-            }
-
-            return super.visitExpression(ctx)
-        }
-
-        override fun visitEquality(ctx: DecafParser.EqualityContext): Validated<Error> {
-            val type = contextualTypeResolver.visitEquality(ctx)
-
-            val eqOperandChecks = if(!ctx.eq_operation().isNullOrEmpty()) {
-                val operandTypes = ctx.eq_operation()
-                    .map { contextualTypeResolver.visitComparison(it.comparison()) }
-
-                val allTypesTheSame = check(operandTypes.all { it == type }) {
-                    semanticError("unsupported operation between different types", ctx)
-                }
-
-                val typesArePrimitive = check(operandTypes.all { it.isPrimitive }) {
-                    semanticError("unsupported operation for non primitive type", ctx)
-                }
-                allTypesTheSame then typesArePrimitive
-            } else Validated.Valid
-
-            val condOperandsChecks = if(!ctx.cond_operation().isNullOrEmpty()) {
-                val operandTypes = ctx.cond_operation()
-                    .map { contextualTypeResolver.visitComparison(it.comparison()) }
-
-                check(operandTypes.all { it is Type.Boolean }) {
-                    semanticError("operation only supported for boolean types", ctx)
-                }
-            } else Validated.Valid
-
-            val comparisonCheck = visitComparison(ctx.comparison())
-
-            val eqOpCheck = ctx.eq_operation().map(::visitEq_operation).zip()
-
-            val condOpCheck = ctx.cond_operation().map(::visitCond_operation).zip()
-
-            return eqOperandChecks then condOperandsChecks then eqOpCheck then condOpCheck then comparisonCheck
-        }
-
-        override fun visitEq_operation(ctx: DecafParser.Eq_operationContext): Validated<Error> {
-            return visitComparison(ctx.comparison())
-        }
-
-        override fun visitCond_operation(ctx: DecafParser.Cond_operationContext): Validated<Error> {
-            return visitComparison(ctx.comparison())
-        }
-
-        override fun visitComparison(ctx: DecafParser.ComparisonContext): Validated<Error> {
-            val type = contextualTypeResolver.visitTerm(ctx.term())
-
-            val operandsCheck = ctx.boolean_operation().map { booleanOperation ->
-                when {
-                    booleanOperation.bool_ret_op().eq_op() != null -> {
-                        val operandType = contextualTypeResolver.visitTerm(booleanOperation.term())
-                        check(type == operandType) {
-                            semanticError("operation must be between same types but attempted between $type and $operandType", ctx)
-                        }
+                ctx.arith_op_mul() != null || ctx.arith_op_sub() != null || ctx.rel_op() != null -> {
+                    kotlin.check(ctx.expression().size == 2){ "more than operand! ${ctx.text}" }
+                    val operandTypes = ctx.expression().map { contextualTypeResolver.visitExpression(it) }
+                    check(operandTypes.all { it is Type.Int }) {
+                        semanticError("expected types Int for operator ${ctx.text} but got $operandTypes", ctx)
                     }
-                    booleanOperation.bool_ret_op().rel_op() != null -> {
-                        val operandType = contextualTypeResolver.visitTerm(booleanOperation.term())
-                        check(type is Type.Int && operandType is Type.Int) {
-                            semanticError("operation must be between same Ints but attempted between $type and $operandType", ctx)
-                        }
+                }
+                ctx.eq_op() != null -> {
+                    kotlin.check(ctx.expression().size == 2){ "more than operand! ${ctx.text}" }
+                    val operandTypes = ctx.expression().map { contextualTypeResolver.visitExpression(it) }
+
+                    val primitiveCheck = check(operandTypes.all { it.isPrimitive }) {
+                        semanticError("unsupported operation ${ctx.eq_op().text} for types $operandTypes", ctx)
                     }
-                    else -> Validated.Valid
+
+                    val sameType = check(operandTypes.distinct().size == 1) {
+                        semanticError("unsupported operation ${ctx.eq_op().text} between types $operandTypes", ctx)
+                    }
+
+                    primitiveCheck then sameType
                 }
-            }.zip()
-
-            val booleanOperationChecks = ctx.boolean_operation().map(::visitBoolean_operation).zip()
-
-            return operandsCheck then booleanOperationChecks then visitTerm(ctx.term())
-        }
-
-        override fun visitBoolean_operation(ctx: DecafParser.Boolean_operationContext): Validated<Error> {
-            return visitTerm(ctx.term())
-        }
-
-        override fun visitTerm(ctx: DecafParser.TermContext): Validated<Error> {
-
-            val checkOperands = ctx.sub_add_op().map { subAddOp ->
-                val type = contextualTypeResolver.visitFactor(subAddOp.factor())
-                check(type is Type.Int) {
-                    semanticError("operation supported only for Int but got $type", subAddOp)
-                }
-            }.zip()
-
-            val factors = ctx.sub_add_op().map(::visitSub_add_op).zip()
-
-            return visitFactor(ctx.factor()) then checkOperands then factors
-        }
-
-        override fun visitSub_add_op(ctx: DecafParser.Sub_add_opContext): Validated<Error> {
-            return visitFactor(ctx.factor())
-        }
-
-        override fun visitFactor(ctx: DecafParser.FactorContext): Validated<Error> {
-            val operandCheck = ctx.mul_div_op().map { mulDivOp ->
-                val type = contextualTypeResolver.visitUnary(mulDivOp.unary())
-                check(type is Type.Int) {
-                    semanticError("operation supported only for Int but got $type", mulDivOp)
-                }
-            }.zip()
-
-            val unaryCheck = ctx.mul_div_op().map(::visitMul_div_op).zip()
-
-            return visitUnary(ctx.unary()) then operandCheck then unaryCheck
-        }
-
-        override fun visitMul_div_op(ctx: DecafParser.Mul_div_opContext): Validated<Error> {
-            return visitUnary(ctx.unary())
-        }
-
-        override fun visitUnary(ctx: DecafParser.UnaryContext): Validated<Error> {
-            return when {
-                ctx.primary() != null -> visitPrimary(ctx.primary())
-                else -> {
+                ctx.unary_op() != null -> {
                     if(ctx.unary_op().EXCL() != null) {
-                        val type = contextualTypeResolver.visitUnary(ctx.unary())
-                        check(type is Type.Boolean) {
-                            semanticError("expected type boolean for operand ! but got $type", ctx)
-                        } then visitUnary(ctx.unary())
-                    } else visitUnary(ctx.unary())
+                        val operandType = contextualTypeResolver.visitExpression(ctx.expression().first())
+                        check(operandType is Type.Boolean) {
+                            semanticError("operation ${ctx.unary_op().EXCL().text} only supported for type Boolean but got $operandType", ctx)
+                        }
+                    } else Validated.Valid
                 }
-            }
-        }
-
-        override fun visitPrimary(ctx: DecafParser.PrimaryContext): Validated<Error> {
-            return when {
-                ctx.symbol_pri() != null -> visitSymbol_pri(ctx.symbol_pri())
-                else -> visitExpression(ctx.expression())
-            }
-        }
-
-        override fun visitSymbol_pri(ctx: DecafParser.Symbol_priContext): Validated<Error> {
-            return when {
-                ctx.literal() != null -> visitLiteral(ctx.literal())
-                ctx.location() != null -> visitLocation(ctx.location())
-                else -> visitMethod_call(ctx.method_call())
-            }
+                else -> visitExpression(ctx.expression().first())
+            } then ctx.expression().map(::visitExpression).zip()
         }
 
         private class ArrayAccessCheck(private val symbols: SymbolTable, private val structs: TypeStore, private val structContext: Type.Struct? = null, ) : DecafBaseVisitor<Validated<Error>>() {

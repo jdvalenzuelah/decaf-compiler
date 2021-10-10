@@ -62,7 +62,12 @@ class ContextualTypeResolver(
     private val typeResolver = StaticTypeResolver()
 
     override fun visitExpression(ctx: DecafParser.ExpressionContext): Type {
-        return super.visitExpression(ctx)
+        return when {
+            ctx.method_call() != null -> visitMethod_call(ctx.method_call())
+            ctx.location() != null -> visitLocation(ctx.location())
+            ctx.literal() != null -> visitLiteral(ctx.literal())
+            else -> visitExpression(ctx.expression().first())
+        }
     }
 
     override fun visitMethod_call(ctx: DecafParser.Method_callContext): Type {
@@ -73,49 +78,6 @@ class ContextualTypeResolver(
 
         return methods.firstOrNull { it.signature == callSignature }
             ?.type ?: Type.Nothing
-    }
-
-    override fun visitEquality(ctx: DecafParser.EqualityContext): Type {
-        return if(ctx.cond_operation().isNullOrEmpty() && ctx.eq_operation().isNullOrEmpty()) {
-            visitComparison(ctx.comparison())
-        } else Type.Boolean
-    }
-
-    override fun visitComparison(ctx: DecafParser.ComparisonContext): Type {
-        return if(ctx.boolean_operation().isNullOrEmpty()) visitTerm(ctx.term()) else Type.Boolean
-    }
-
-    override fun visitTerm(ctx: DecafParser.TermContext): Type {
-        return visitFactor(ctx.factor())
-    }
-
-    override fun visitFactor(ctx: DecafParser.FactorContext): Type {
-        return visitUnary(ctx.unary())
-    }
-
-    override fun visitUnary(ctx: DecafParser.UnaryContext): Type {
-        return when {
-            ctx.unary() != null -> visitUnary(ctx.unary())
-            ctx.primary() != null -> visitPrimary(ctx.primary())
-            else -> Type.Nothing
-        }
-    }
-
-    override fun visitPrimary(ctx: DecafParser.PrimaryContext): Type {
-        return when {
-            ctx.symbol_pri() != null -> visitSymbol_pri(ctx.symbol_pri())
-            ctx.expression() != null -> visitExpression(ctx.expression())
-            else -> Type.Nothing
-        }
-    }
-
-    override fun visitSymbol_pri(ctx: DecafParser.Symbol_priContext): Type {
-        return when {
-            ctx.literal() != null -> visitLiteral(ctx.literal())
-            ctx.location() != null -> visitLocation(ctx.location())
-            ctx.method_call() != null -> visitMethod_call(ctx.method_call())
-            else -> Type.Nothing
-        }
     }
 
     override fun visitLocation(ctx: DecafParser.LocationContext): Type {
