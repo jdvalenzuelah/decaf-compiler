@@ -66,6 +66,8 @@ class ContextualTypeResolver(
             ctx.method_call() != null -> visitMethod_call(ctx.method_call())
             ctx.location() != null -> visitLocation(ctx.location())
             ctx.literal() != null -> visitLiteral(ctx.literal())
+            ctx.arith_op_sub() != null || ctx.arith_op_mul() != null -> Type.Int
+            ctx.rel_op() != null || ctx.cond_op() != null || ctx.eq_op() != null -> Type.Boolean
             else -> visitExpression(ctx.expression().first())
         }
     }

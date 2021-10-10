@@ -2,6 +2,8 @@ package com.github.dcc.compiler.symbols.variables
 
 import com.github.dcc.decaf.enviroment.Scope
 import com.github.dcc.decaf.enviroment.child
+import com.github.dcc.decaf.enviroment.lineage
+import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.SymbolStore
 
@@ -30,6 +32,11 @@ class SymbolTable(
 
     private var currentScopeIndex = 0
 
+    fun resetScope() {
+        currentScopeIndex = 0
+        child.forEach(SymbolTable::resetScope)
+    }
+
     fun getNextChildScope(label: String): SymbolTable {
         val encoded = getEncodedLabel(label, currentScopeIndex)
         val found = child.first { it.scope is Scope.Local && it.scope.name == encoded }
@@ -42,4 +49,5 @@ class SymbolTable(
             ?: parent?.symbolBottomToTop(name)
     }
 
+    fun symbolIndexBottomToTOp(name: String): Int = symbols.indexOfFirst { it.name == name }
 }

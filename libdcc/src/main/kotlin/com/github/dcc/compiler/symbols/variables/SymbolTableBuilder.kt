@@ -15,7 +15,8 @@ internal class DeclarationResolver(private val scope: Scope = Scope.Global) : De
     private val typeResolver = StaticTypeResolver()
 
     override fun visitVar_decl(ctx: DecafParser.Var_declContext): Declaration.Variable {
-        return ctx.array_decl()?.let(::visitArray_decl) ?: ctx.prop_decl()!!.let(::visitProp_decl)
+        return ctx.array_decl()?.let(::visitArray_decl)
+            ?: ctx.prop_decl()!!.let(::visitProp_decl)
     }
 
     override fun visitProp_decl(ctx: DecafParser.Prop_declContext): Declaration.Variable {

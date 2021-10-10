@@ -133,7 +133,7 @@ parameter_type: INT | CHAR | BOOLEAN;
 
 block: OCURLY (var_decl | statement)* CCURLY;
 
-statement: if_expr | while_expr | return_expr | method_call SEMICOLON | block | assignment | (expression? SEMICOLON);
+statement: if_expr | while_expr | return_expr | method_call SEMICOLON | block | assignment SEMICOLON | expression SEMICOLON;
 
 if_expr: if_block else_block?;
 
