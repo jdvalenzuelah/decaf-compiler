@@ -5,6 +5,7 @@ import com.github.dcc.decaf.literals.Literal
 import com.github.dcc.decaf.operators.*
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.TypeStore
+import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafParser
 
 sealed class DecafElementsIR
@@ -21,11 +22,42 @@ sealed class DecafExpression : DecafElementsIR() {
         val parameters: List<DecafExpression>,
     ): DecafExpression()
 
-    //TODO: remove parser context
-    data class Location(
-        val ctx: DecafParser.LocationContext,
+    sealed class Location(
+        val name: String,
+        val subLocation: Location?,
+        val context: Type.Struct?,
     ): DecafExpression() {
-        override fun toString(): String = ctx.text
+        class ArrayLocation(
+            name: String,
+            val index: DecafExpression,
+            subLocation: Location?,
+            context: Type.Struct?,
+        ): Location(name, subLocation, context)
+
+        class VarLocation(
+            name: String,
+            subLocation: Location?,
+            context: Type.Struct?,
+        ): Location(name, subLocation, context)
+
+        internal fun flatten(): Collection<Location> {
+            val all = mutableListOf(this)
+            var cur: Location = this
+            while (cur.subLocation != null) {
+                cur = cur.subLocation!!
+                all.add(cur)
+            }
+            return all
+        }
+
+        override fun toString(): String {
+            return flatten().joinToString(separator = ".") {
+                when(it) {
+                    is ArrayLocation -> "${it.name}[${it.index}]"
+                    is VarLocation -> it.name
+                }
+            }
+        }
     }
 
     data class Constant(

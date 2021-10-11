@@ -8,6 +8,7 @@ import com.github.dcc.decaf.operators.*
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.MethodStore
 import com.github.dcc.decaf.symbols.TypeStore
+import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
 
@@ -76,7 +77,24 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, structs: 
     }
 
     override fun visitLocation(ctx: DecafParser.LocationContext): DecafExpression.Location  {
-        return DecafExpression.Location(ctx)
+        //This is wrong i think!
+        val isArray = ctx.var_location().location_array() != null
+        val varLocationType = contextualTypeResolver.visitVar_location(ctx.var_location())
+
+        return if(isArray) {
+            DecafExpression.Location.ArrayLocation(
+                name = ctx.var_location().location_array().ID().text,
+                index = visitExpression(ctx.var_location().location_array().expression()),
+                subLocation = ctx.sub_location()?.let { visitLocation(it.location()) },
+                context = if(varLocationType is Type.Struct) varLocationType else null
+            )
+        } else {
+            DecafExpression.Location.VarLocation(
+                name = ctx.var_location().ID().text,
+                subLocation = ctx.sub_location()?.let { visitLocation(it.location()) },
+                context = if(varLocationType is Type.Struct) varLocationType else null
+            )
+        }
     }
 
     override fun visitLiteral(ctx: DecafParser.LiteralContext): DecafExpression  {
@@ -89,4 +107,3 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, structs: 
         return DecafExpression.Constant(literal)
     }
 }
-

@@ -49,5 +49,13 @@ class SymbolTable(
             ?: parent?.symbolBottomToTop(name)
     }
 
-    fun symbolIndexBottomToTOp(name: String): Int = symbols.indexOfFirst { it.name == name }
+    fun localSymbolIndex(name: String): Int {
+        val index = symbols.indexOfFirst { it.name == name}
+
+        if(0 > index && parent != null && parent.scope !is Scope.Global) {
+            return parent.localSymbolIndex(name)
+        }
+
+        return index
+    }
 }

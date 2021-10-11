@@ -92,6 +92,11 @@ class ContextualTypeResolver(
             .visitLocation_array(ctx)
     }
 
+    override fun visitVar_location(ctx: DecafParser.Var_locationContext): Type {
+        return LocationTypeResolver(symbols, structs, null)
+            .visitVar_location(ctx)
+    }
+
     override fun visitLiteral(ctx: DecafParser.LiteralContext): Type {
         return typeResolver.visitLiteral(ctx) ?: Type.Nothing
     }
