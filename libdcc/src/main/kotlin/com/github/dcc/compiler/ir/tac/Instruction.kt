@@ -1,38 +1,39 @@
 package com.github.dcc.compiler.ir.tac
 
 import com.github.dcc.decaf.literals.Literal
+import java.lang.StringBuilder
 
-class InstructionsVBuilder {
+class InstructionsBuilder {
 
-    private val instructions = mutableListOf<InstructionV>()
+    private val instructions = mutableListOf<Instruction>()
 
-    operator fun Collection<InstructionV>.unaryPlus() {
+    operator fun Collection<Instruction>.unaryPlus() {
         instructions.addAll(this)
     }
 
-    operator fun Iterable<InstructionV>.unaryPlus() {
+    operator fun Iterable<Instruction>.unaryPlus() {
         instructions.addAll(this)
     }
 
-    operator fun InstructionV.unaryPlus() {
+    operator fun Instruction.unaryPlus() {
         instructions.add(this)
     }
 
-    fun build() = InstructionV
+    fun build() = Instruction
         .Instructions(instructions)
 
 }
 
-fun instructionsOf(vararg instructions: InstructionV) = InstructionV
+fun instructionsOf(vararg instructions: Instruction) = Instruction
     .Instructions(instructions.toList())
 
-fun instructionsOf(collection: Collection<InstructionV>) = InstructionV
+fun instructionsOf(collection: Collection<Instruction>) = Instruction
     .Instructions(collection)
 
-fun instructions(init: InstructionsVBuilder.() -> Unit) = InstructionsVBuilder().apply(init)
+fun instructions(init: InstructionsBuilder.() -> Unit) = InstructionsBuilder().apply(init)
     .build()
 
-sealed class InstructionV {
+sealed class Instruction {
 
     abstract val adds: Int
     abstract val removes: Int
@@ -41,25 +42,34 @@ sealed class InstructionV {
 
     override fun toString(): String = mnemonic
 
-    class Instructions(private val instructions: Collection<InstructionV>): Iterable<InstructionV> {
+    class Instructions(
+        instructions: Collection<Instruction>
+    ): Collection<Instruction> by instructions {
 
-        override fun iterator(): Iterator<InstructionV> = instructions.iterator()
+        private val instructions = instructions.toMutableList()
+
+        override fun iterator(): Iterator<Instruction> = instructions.iterator()
         private var stackSize = 0
 
         init {
             instructions.forEach {
                 stackSize += it.adds
-                stackSize -+ it.removes
+                stackSize -= it.removes
             }
         }
 
         fun stack(): Int = stackSize
+        
+        fun add(instruction: Instruction) = apply {
+            instructions.add(instruction)
+        }
+        
     }
 
 
     data class LoadLocal(
         val index: Int
-    ): InstructionV() {
+    ): Instruction() {
         override val adds = 1
         override val removes = 0
         override val requires = 0
@@ -70,7 +80,7 @@ sealed class InstructionV {
 
     data class StoreLocal(
         val index: Int,
-    ): InstructionV() {
+    ): Instruction() {
         override val adds = 0
         override val removes = 1
         override val requires = 1
@@ -81,7 +91,7 @@ sealed class InstructionV {
 
     data class PushConstant(
         val constant: Literal,
-    ): InstructionV() {
+    ): Instruction() {
         override val adds = 1
         override val removes = 0
         override val requires = 0
@@ -90,10 +100,19 @@ sealed class InstructionV {
         override fun toString(): String = "$mnemonic $constant"
     }
 
+    object Pop : Instruction() {
+        override val adds = 0
+        override val removes = 1
+        override val requires = 1
+        override val mnemonic = "pop"
+
+        override fun toString(): String = mnemonic
+    }
+
     data class MethodCall(
         val index: Int,
         val parameterCount: Int,
-    ): InstructionV() {
+    ): Instruction() {
         override val mnemonic: String = "invoke"
         override val adds: Int = 1
         override val requires: Int = parameterCount
@@ -102,115 +121,148 @@ sealed class InstructionV {
         override fun toString(): String = "$mnemonic $index"
     }
 
-    object Mul : InstructionV() {
+    object Mul : Instruction() {
         override val mnemonic: String = "mul"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Div : InstructionV() {
+    object Div : Instruction() {
         override val mnemonic: String = "div"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Rem : InstructionV() {
+    object Rem : Instruction() {
         override val mnemonic: String = "rem"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Add : InstructionV() {
+    object Add : Instruction() {
         override val mnemonic: String = "add"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Sub : InstructionV() {
+    object Sub : Instruction() {
         override val mnemonic: String = "sub"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Eq : InstructionV() {
+    object Eq : Instruction() {
         override val mnemonic: String = "eq"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
-    object Neq : InstructionV() {
+    object Neq : Instruction() {
         override val mnemonic: String = "neq"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Gt : InstructionV() {
+    object Gt : Instruction() {
         override val mnemonic: String = "gt"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Lt : InstructionV() {
+    object Lt : Instruction() {
         override val mnemonic: String = "lt"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Gte : InstructionV() {
+    object Gte : Instruction() {
         override val mnemonic: String = "gte"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Lte : InstructionV() {
+    object Lte : Instruction() {
         override val mnemonic: String = "lte"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object And : InstructionV() {
+    object And : Instruction() {
         override val mnemonic: String = "and"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object Or : InstructionV() {
+    object Or : Instruction() {
         override val mnemonic: String = "or"
         override val adds: Int = 1
         override val requires: Int = 2
         override val removes: Int = 2
     }
 
-    object SubUnary : InstructionV() {
+    object SubUnary : Instruction() {
         override val mnemonic: String = "subu"
         override val adds: Int = 1
         override val requires: Int = 1
         override val removes: Int = 1
     }
 
-    object Negate : InstructionV() {
+    object Negate : Instruction() {
         override val mnemonic: String = "neg"
         override val adds: Int = 1
         override val requires: Int = 1
         override val removes: Int = 1
     }
 
-    object Return : InstructionV() {
+    object Return : Instruction() {
         override val mnemonic: String = "return"
         override val adds: Int = 0
         override val requires: Int = 1
         override val removes: Int = 1
+    }
+
+    data class If(val branchLabel: String) : Instruction() {
+        override val mnemonic: String = "if"
+        override val adds: Int = 0
+        override val requires: Int = 1
+        override val removes: Int = 1
+
+        override fun toString(): String = "$mnemonic $branchLabel"
+    }
+
+    data class Goto(val branchLabel: String) : Instruction() {
+        override val mnemonic: String = "goto"
+        override val adds: Int = 0
+        override val requires: Int = 1
+        override val removes: Int = 1
+
+        override fun toString(): String = "$mnemonic $branchLabel"
+    }
+
+    data class LabeledBlock(
+        val label: String,
+        val instruction: Instructions,
+    ) : Instruction() {
+        override val mnemonic: String = label
+        override val adds: Int = 0
+        override val requires: Int = 1
+        override val removes: Int = 1
+
+        override fun toString(): String = StringBuilder()
+            .appendLine("$mnemonic:")
+            .apply { instruction.forEach { appendLine(it.toString()) } }
+            .toString()
     }
 
 }
