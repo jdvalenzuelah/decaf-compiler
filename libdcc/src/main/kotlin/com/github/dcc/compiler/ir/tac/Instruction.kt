@@ -63,6 +63,8 @@ sealed class Instruction {
         fun add(instruction: Instruction) = apply {
             instructions.add(instruction)
         }
+
+        override fun toString(): String = joinToString(separator = "\n"){ it.toString() }
         
     }
 
@@ -78,6 +80,17 @@ sealed class Instruction {
         override fun toString(): String = "$mnemonic $index"
     }
 
+    data class LoadGlobal(
+        val index: Int
+    ): Instruction() {
+        override val adds = 1
+        override val removes = 0
+        override val requires = 0
+        override val mnemonic = "gload"
+
+        override fun toString(): String = "$mnemonic $index"
+    }
+
     data class StoreLocal(
         val index: Int,
     ): Instruction() {
@@ -87,6 +100,46 @@ sealed class Instruction {
         override val mnemonic = "store"
 
         override fun toString(): String = "$mnemonic $index"
+    }
+
+    object LoadArray : Instruction() {
+        override val adds = 1
+        override val removes = 2
+        override val requires = 2
+        override val mnemonic = "aload"
+
+        override fun toString(): String = mnemonic
+    }
+
+    data class LoadField(
+        val index: Int
+    ) : Instruction() {
+        override val adds = 1
+        override val removes = 1
+        override val requires = 1
+        override val mnemonic = "getfield"
+
+        override fun toString(): String = "$mnemonic $index"
+    }
+
+    data class StoreGlobal(
+        val index: Int,
+    ): Instruction() {
+        override val adds = 0
+        override val removes = 1
+        override val requires = 1
+        override val mnemonic = "gstore"
+
+        override fun toString(): String = "$mnemonic $index"
+    }
+
+    object StoreRef: Instruction() {
+        override val adds = 0
+        override val removes = 2
+        override val requires = 2
+        override val mnemonic = "storef"
+
+        override fun toString(): String = mnemonic
     }
 
     data class PushConstant(
@@ -261,8 +314,9 @@ sealed class Instruction {
 
         override fun toString(): String = StringBuilder()
             .appendLine("$mnemonic:")
-            .apply { instruction.forEach { appendLine(it.toString()) } }
+            .apply {
+                append(instruction.joinToString(separator = "\n") { it.toString() })
+            }
             .toString()
     }
-
 }

@@ -1,16 +1,44 @@
 package com.github.dcc.compiler.ir.tac.transforms
 
+import com.github.dcc.compiler.ir.Program
 import com.github.dcc.compiler.ir.decaf.DecafExpression
+import com.github.dcc.compiler.ir.decaf.DecafMethod
 import com.github.dcc.compiler.ir.decaf.DecafStatement
 import com.github.dcc.compiler.ir.tac.Instruction
 import com.github.dcc.compiler.ir.tac.instructions
+import com.github.dcc.compiler.ir.tac.instructionsOf
 import com.github.dcc.decaf.symbols.MethodStore
 import com.github.dcc.decaf.symbols.TypeStore
 import com.github.dcc.compiler.symbols.variables.SymbolTable
 import com.github.dcc.decaf.operators.*
+import com.github.dcc.decaf.types.Type
 
 fun interface Transform<in A, out B> {
     fun transform(value: A): B
+}
+
+
+class MethodTransform(
+    val global: SymbolTable,
+    val methods: MethodStore,
+    val types: TypeStore
+): Transform<DecafMethod, Program.Method> {
+
+    override fun transform(value: DecafMethod): Program.Method {
+        val statementTransform =  StatementTransform(
+            global = global,
+            local = value.symbols,
+            methods = methods,
+            types = types
+        )
+
+        return Program.Method(
+            index = methods.indexOfFirst { it.signature == value.signature },
+            body = instructionsOf(value.block.statements.flatMap { statementTransform.transform(it) })
+        )
+
+    }
+
 }
 
 class StatementTransform(
@@ -46,7 +74,8 @@ class StatementTransform(
                     +Instruction.If(value.ifBlock.label)
 
                     if(value.elseBlock != null) {
-                        +transform(value.elseBlock.statements)
+                        +StatementTransform(global, value.elseBlock.scope, methods, types)
+                            .transform(value.elseBlock.statements)
                             .apply {
                                 lastOrNull()?.also {
                                     if(it !is Instruction.Return)
@@ -59,7 +88,8 @@ class StatementTransform(
 
                     +Instruction.LabeledBlock(
                         label = value.ifBlock.label,
-                        instruction = transform(value.ifBlock.statements)
+                        instruction = StatementTransform(global, value.ifBlock.scope, methods, types)
+                            .transform(value.ifBlock.statements)
                     )
 
                     nextNeedsLabel()
@@ -80,7 +110,8 @@ class StatementTransform(
                     +Instruction.Goto(nextLabel)
                     +Instruction.LabeledBlock(
                         label = bodyLabel,
-                        instruction = transform(value.block.statements).apply {
+                        instruction = StatementTransform(global, value.block.scope, methods, types)
+                            .transform(value.block.statements).apply {
                             add(Instruction.Goto(condLabel))
                         }
                     )
@@ -106,10 +137,9 @@ class StatementTransform(
             }
             is DecafStatement.Assignment -> {
                 instructions {
-                    val index = local.localSymbolIndex(value.location.name)
-                    //+locationTransform.transform(stm.location)
+                    +locationTransform.transform(value.location)
                     +exprTransform.transform(value.expression)
-                    +Instruction.StoreLocal(index)
+                    +Instruction.StoreRef
                 }
             }
             is DecafStatement.Expression -> {
@@ -126,13 +156,12 @@ class StatementTransform(
         }
 
         return if(needsToBeLabeled) {
-
-            Instruction.Instructions(listOf(
+            instructionsOf(
                 Instruction.LabeledBlock(
                     label = getNextLabelAndIncrease(),
                     instruction = instructions
                 )
-            ))
+            )
         } else instructions
     }
 
@@ -149,10 +178,6 @@ class StatementTransform(
     private fun getNextLabel(): String = getLabel(lastLabel)
 
     private fun getLabel(index: Int) ="_L$index"
-
-    fun transformStatement(value: DecafStatement) {
-        transform(value).forEach(::println)
-    }
 }
 
 class ExpressionTransform(
@@ -251,7 +276,6 @@ class ExpressionTransform(
 
 }
 
-
 class LocationTransform(
     val global: SymbolTable,
     val local: SymbolTable,
@@ -259,13 +283,52 @@ class LocationTransform(
     val types: TypeStore
 ): Transform<DecafExpression.Location, Instruction.Instructions> {
 
+    private val exprTransform = ExpressionTransform(global, local, methods, types)
+
     override fun transform(value: DecafExpression.Location): Instruction.Instructions {
-        //TODO: Check for global and array
-        val index = local.localSymbolIndex(value.name)
+        val localIndex = local.localSymbolIndex(value.name)
+
+        val (index, isGlobal) = if(0 > localIndex)
+            global.localSymbolIndex(value.name, skipGlobals = false) to true
+        else
+            localIndex to false
 
         return instructions {
-            +Instruction.LoadLocal(index)
+            +loadVar(index, isGlobal)
+
+            if(value is DecafExpression.Location.ArrayLocation) {
+                +exprTransform.transform(value.index)
+                +Instruction.LoadArray
+            }
+
+            if(value.subLocation != null && value.context != null) {
+               +subLocation(value.subLocation, value.context)
+            }
+
         }
     }
+
+    private fun subLocation(location: DecafExpression.Location, context: Type.Struct): Instruction.Instructions {
+        val structContext = types.first { it.name == context.name }
+        val fieldIndex = structContext.properties.indexOfFirst { it.name == location.name }
+
+        return instructions {
+            +Instruction.LoadField(fieldIndex)
+
+            if(location is DecafExpression.Location.ArrayLocation) {
+                +exprTransform.transform(location.index)
+                +Instruction.LoadArray
+            }
+
+            if(location.subLocation != null && location.context != null) {
+                +subLocation(location.subLocation, location.context)
+            }
+
+        }
+
+    }
+
+    private fun loadVar(index: Int, isGlobal: Boolean): Instruction =
+        if(isGlobal) Instruction.LoadGlobal(index) else Instruction.LoadLocal(index)
 
 }

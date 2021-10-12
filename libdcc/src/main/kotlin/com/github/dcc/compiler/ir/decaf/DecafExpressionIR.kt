@@ -12,7 +12,8 @@ sealed class DecafElementsIR
 
 data class LabeledBlock(
     val label: String,
-    val statements: DecafStatement.Block
+    val statements: DecafStatement.Block,
+    val scope: SymbolTable
 ): DecafElementsIR()
 
 sealed class DecafExpression : DecafElementsIR() {
@@ -107,8 +108,6 @@ sealed class DecafExpression : DecafElementsIR() {
 
 sealed class DecafStatement : DecafElementsIR() {
 
-
-    //TODO: Add var decls?
     data class Block(
         val statements: Collection<DecafStatement>,
     ): DecafStatement()

@@ -34,7 +34,8 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
             label = ifScope.scope.lineageAsString(),
             statements = DecafStatement.Block(
                 ctx.if_block().block().statement().map { ifScopeExpressions.visitStatement(it) }
-            )
+            ),
+            scope = ifScope
         )
 
         val elseBlock = if(ctx.else_block() != null) {
@@ -44,7 +45,8 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
                 label = elseScope.scope.lineageAsString(),
                 statements = DecafStatement.Block(
                     ctx.else_block().block().statement().map { elseScopeExpressions.visitStatement(it) }
-                )
+                ),
+                scope = elseScope
             )
         } else null
 
@@ -64,7 +66,8 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
                 label = whileScope.scope.lineageAsString(),
                 statements =  DecafStatement.Block(
                     ctx.block().statement().map { whileScopeExpressions.visitStatement(it) }
-                )
+                ),
+                scope = whileScope
             )
         )
     }

@@ -105,7 +105,7 @@ ID: LETTER (LETTER|DIGIT)*;
 
 program: CLASS PROGRAM OCURLY (var_decl | struct_decl | method_decl)* CCURLY;
 
-var_decl: (prop_decl | array_decl) SEMICOLON;
+var_decl: prop_decl SEMICOLON | array_decl SEMICOLON;
 
 prop_decl: var_type ID;
 

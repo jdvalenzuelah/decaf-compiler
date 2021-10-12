@@ -12,7 +12,7 @@ import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
 
-class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, structs: TypeStore): DecafBaseVisitor<DecafExpression>() {
+class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private val structs: TypeStore): DecafBaseVisitor<DecafExpression>() {
 
     private val contextualTypeResolver = ContextualTypeResolver(symbols, methods, structs)
 
@@ -77,7 +77,6 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, structs: 
     }
 
     override fun visitLocation(ctx: DecafParser.LocationContext): DecafExpression.Location  {
-        //This is wrong i think!
         val isArray = ctx.var_location().location_array() != null
         val varLocationType = contextualTypeResolver.visitVar_location(ctx.var_location())
 
@@ -85,16 +84,50 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, structs: 
             DecafExpression.Location.ArrayLocation(
                 name = ctx.var_location().location_array().ID().text,
                 index = visitExpression(ctx.var_location().location_array().expression()),
-                subLocation = ctx.sub_location()?.let { visitLocation(it.location()) },
+                subLocation = if(ctx.sub_location() != null && varLocationType is Type.Struct)
+                    visitSubLocation(ctx.sub_location().location(), varLocationType)
+                else null,
                 context = if(varLocationType is Type.Struct) varLocationType else null
             )
         } else {
             DecafExpression.Location.VarLocation(
                 name = ctx.var_location().ID().text,
-                subLocation = ctx.sub_location()?.let { visitLocation(it.location()) },
+                subLocation = if(ctx.sub_location() != null && varLocationType is Type.Struct)
+                    visitSubLocation(ctx.sub_location().location(), varLocationType)
+                else null,
                 context = if(varLocationType is Type.Struct) varLocationType else null
             )
         }
+    }
+
+    private fun visitSubLocation(ctx: DecafParser.LocationContext, parentType: Type.Struct): DecafExpression.Location {
+        val isArray = ctx.var_location().location_array() != null
+        val parentStruct = structs.first { it.name == parentType.name }
+
+        return if(isArray) {
+            val name = ctx.var_location().location_array().ID().text
+            val type = parentStruct.properties.first { it.name == name }.type as? Type.Struct
+            DecafExpression.Location.ArrayLocation(
+                name = name,
+                index = visitExpression(ctx.var_location().location_array().expression()),
+                subLocation = if(ctx.sub_location() != null && type != null)
+                    visitSubLocation(ctx.sub_location().location(), type)
+                else null,
+                context = type,
+            )
+        } else {
+            val name = ctx.var_location().ID().text
+            val type = parentStruct.properties.first { it.name == name }.type as? Type.Struct
+            DecafExpression.Location.VarLocation(
+                name = name,
+                subLocation = if(ctx.sub_location() != null && type != null)
+                    visitSubLocation(ctx.sub_location().location(), type)
+                else null,
+                context = type
+            )
+        }
+
+
     }
 
     override fun visitLiteral(ctx: DecafParser.LiteralContext): DecafExpression  {

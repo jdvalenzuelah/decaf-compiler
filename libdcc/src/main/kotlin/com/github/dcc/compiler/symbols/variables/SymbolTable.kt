@@ -2,8 +2,6 @@ package com.github.dcc.compiler.symbols.variables
 
 import com.github.dcc.decaf.enviroment.Scope
 import com.github.dcc.decaf.enviroment.child
-import com.github.dcc.decaf.enviroment.lineage
-import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.SymbolStore
 
@@ -11,7 +9,8 @@ class SymbolTable(
     val symbols: SymbolStore,
     val scope: Scope = Scope.Global,
     val parent: SymbolTable? = null,
-    val child: MutableCollection<SymbolTable> = mutableListOf()
+    val child: MutableCollection<SymbolTable> = mutableListOf(),
+    private val indexOffset: Int = 0,
 ) {
 
     private fun getEncodedLabel(label: String, index: Int) = "$label$$index"
@@ -22,7 +21,8 @@ class SymbolTable(
         val new = SymbolTable(
             scope = childScope(label),
             symbols = symbols,
-            parent = this
+            parent = this,
+            indexOffset = indexOffset + symbols.size
         )
         child.add(new)
         return new
@@ -49,13 +49,18 @@ class SymbolTable(
             ?: parent?.symbolBottomToTop(name)
     }
 
-    fun localSymbolIndex(name: String): Int {
-        val index = symbols.indexOfFirst { it.name == name}
+    private fun allLocals(skipGlobals: Boolean = true): SymbolStore {
+        if(scope is Scope.Global && skipGlobals)
+            return emptyList()
 
-        if(0 > index && parent != null && parent.scope !is Scope.Global) {
-            return parent.localSymbolIndex(name)
-        }
+        val parentSymbols = if(parent != null && (skipGlobals || parent.scope !is Scope.Global)) {
+            parent.allLocals()
+        } else emptyList()
 
-        return index
+        return symbols + parentSymbols
+    }
+
+    fun localSymbolIndex(name: String, skipGlobals: Boolean = true): Int {
+        return allLocals(skipGlobals).indexOfFirst { it.name == name}
     }
 }
