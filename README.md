@@ -53,6 +53,7 @@ Options:
   -dt, --dump-tree     Prints parse tree in unix's tree utility style
   -ds, --dump-symbols  Prints symbol table in plain text
   -dtt, --dump-types   Prints struct table in plain text
+  -ir, --dump-ir       Dump intermediate representation to file
   --target TEXT        Generate code for the given target
   -h, --help           Show this message and exit
 

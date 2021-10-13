@@ -4,6 +4,7 @@ import com.github.dcc.compiler.Compiler
 import com.github.dcc.compiler.Error
 import com.github.dcc.compiler.Error.SemanticError
 import com.github.dcc.compiler.Error.SyntaxError
+import com.github.dcc.compiler.ir.Program
 import com.github.dcc.compiler.symbols.variables.SymbolTable
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.Declaration
@@ -13,8 +14,8 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
 import java.io.File
-import java.lang.StringBuilder
 import kotlin.math.max
+import kotlin.text.StringBuilder
 
 object Prettify {
 
@@ -35,6 +36,8 @@ object Prettify {
         }
         return buf.toString()
     }
+
+    fun ir(program: Program): String = program.toString()
 
     fun compilationResult(result: Compiler.CompilationResult, file: File): String {
         return when(result) {

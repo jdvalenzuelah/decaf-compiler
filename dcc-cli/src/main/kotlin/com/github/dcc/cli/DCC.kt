@@ -2,12 +2,14 @@ package com.github.dcc.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.dcc.cli.ui.Prettify
 import com.github.dcc.compiler.Compiler
+import java.io.File
 
 
 object DCC : CliktCommand() {
@@ -25,6 +27,9 @@ object DCC : CliktCommand() {
         .flag(default = false)
 
     private val printTypeTable by option("-dtt", "--dump-types", help = "Prints struct table in plain text")
+        .flag(default = false)
+
+    private val dumpIr by option("-ir", "--dump-ir", help = "Dump intermediate representation to file")
         .flag(default = false)
 
     //TODO
@@ -53,8 +58,17 @@ object DCC : CliktCommand() {
 
         if(!justParser) {
             val result = compiler.compileSource()
+
+            if(dumpIr && result is Compiler.CompilationResult.Success) {
+                File("${file.name}.ir").apply {
+                    writeText(Prettify.ir(result.ir))
+                    echo("Dumped intermediate representation to file $path")
+                }
+            }
+
             val isError = result !is Compiler.CompilationResult.Success
             echo(Prettify.compilationResult(result, file), err = isError)
+
         }
     }
 

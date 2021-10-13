@@ -1,5 +1,7 @@
 package com.github.dcc.compiler
 
+import com.github.dcc.compiler.ir.Program
+import com.github.dcc.compiler.ir.ProgramTransform
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
 import com.github.dcc.compiler.symbols.ProgramSymbols
 import com.github.dcc.compiler.syntaxAnalysis.SyntaxErrorListener
@@ -47,7 +49,9 @@ class Compiler(
 
         data class SemanticError(val errors: Iterable<Validated.Invalid<Error>>): CompilationResult()
 
-        object Success : CompilationResult()
+        data class Success(
+            val ir: Program,
+        ) : CompilationResult()
 
     }
 
@@ -64,7 +68,13 @@ class Compiler(
             return CompilationResult.SemanticError(semanticAnalysis)
         }
 
-        return CompilationResult.Success
+        symbols.symbolTable.resetScope()
+        val ir = ProgramTransform(
+            parser.program(),
+            symbols,
+        )
+
+        return CompilationResult.Success(ir)
     }
 
 }
