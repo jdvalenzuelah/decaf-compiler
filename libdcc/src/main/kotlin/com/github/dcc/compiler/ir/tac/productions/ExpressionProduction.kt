@@ -106,7 +106,7 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private v
 
         return if(isArray) {
             val name = ctx.var_location().location_array().ID().text
-            val type = parentStruct.properties.first { it.name == name }.type as? Type.Struct
+            val type = parentStruct.properties.first { it.name == name }.type.asPlain() as? Type.Struct
             DecafExpression.Location.ArrayLocation(
                 name = name,
                 index = visitExpression(ctx.var_location().location_array().expression()),
@@ -117,7 +117,7 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private v
             )
         } else {
             val name = ctx.var_location().ID().text
-            val type = parentStruct.properties.first { it.name == name }.type as? Type.Struct
+            val type = parentStruct.properties.first { it.name == name }.type.asPlain() as? Type.Struct
             DecafExpression.Location.VarLocation(
                 name = name,
                 subLocation = if(ctx.sub_location() != null && type != null)

@@ -33,4 +33,10 @@ sealed class Type(
 
     fun noSize() = if(this is Array) ArrayUnknownSize(type) else this
 
+    fun asPlain() = when(this) {
+        is Array -> type
+        is ArrayUnknownSize -> type
+        else -> this
+    }
+
 }
