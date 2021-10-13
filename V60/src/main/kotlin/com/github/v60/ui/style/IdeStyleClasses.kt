@@ -48,4 +48,6 @@ class IdeStyleClasses : AttributeBuilder() {
     val codeEditor get() = apply { classes("code-editor") }
 
     val error get() = apply { classes("error") }
+
+    val irStatus get() = apply { classes("ir-status-bar") }
 }
