@@ -2,6 +2,7 @@ package com.github.dcc.compiler.ir.tac
 
 import com.github.dcc.decaf.literals.Literal
 import java.lang.StringBuilder
+import kotlin.math.max
 
 class InstructionsBuilder {
 
@@ -49,16 +50,19 @@ sealed class Instruction {
         private val instructions = instructions.toMutableList()
 
         override fun iterator(): Iterator<Instruction> = instructions.iterator()
-        private var stackSize = 0
+        private var stackSize = 1
+        private var maxStackSize = 0
 
         init {
             instructions.forEach {
-                stackSize += it.adds
-                stackSize -= it.removes
+                stackSize += it.adds - it.removes
+                maxStackSize = max(maxStackSize, stackSize)
             }
-        }
+         }
 
         fun stack(): Int = stackSize
+
+        fun maxStack(): Int = maxStackSize
         
         fun add(instruction: Instruction) = apply {
             instructions.add(instruction)
@@ -78,6 +82,17 @@ sealed class Instruction {
         override val mnemonic = "load"
 
         override fun toString(): String = "$mnemonic $index"
+    }
+
+    data class ILoadLocal(
+        val index: Int
+    ): Instruction() {
+        override val adds = 1
+        override val removes = 0
+        override val requires = 0
+        override val mnemonic = "iload"
+
+        override fun toString(): String = "${mnemonic}_$index"
     }
 
     data class LoadGlobal(
@@ -111,6 +126,15 @@ sealed class Instruction {
         override fun toString(): String = mnemonic
     }
 
+    object ILoadArray : Instruction() {
+        override val adds = 1
+        override val removes = 2
+        override val requires = 2
+        override val mnemonic = "iaload"
+
+        override fun toString(): String = mnemonic
+    }
+
     data class LoadField(
         val index: Int
     ) : Instruction() {
@@ -140,6 +164,24 @@ sealed class Instruction {
         override val mnemonic = "storef"
 
         override fun toString(): String = mnemonic
+    }
+
+    object IAStore: Instruction() {
+        override val adds = 0
+        override val removes = 2
+        override val requires = 2
+        override val mnemonic = "iastore"
+
+        override fun toString(): String = mnemonic
+    }
+
+    data class IStore(val index: Int): Instruction() {
+        override val adds = 0
+        override val removes = 1
+        override val requires = 1
+        override val mnemonic = "istore"
+
+        override fun toString(): String = "${mnemonic}_$index"
     }
 
     data class PushConstant(
@@ -285,6 +327,13 @@ sealed class Instruction {
         override val removes: Int = 1
     }
 
+    object IReturn : Instruction() {
+        override val mnemonic: String = "ireturn"
+        override val adds: Int = 0
+        override val requires: Int = 1
+        override val removes: Int = 1
+    }
+
     data class If(val branchLabel: String) : Instruction() {
         override val mnemonic: String = "if"
         override val adds: Int = 0
@@ -297,8 +346,8 @@ sealed class Instruction {
     data class Goto(val branchLabel: String) : Instruction() {
         override val mnemonic: String = "goto"
         override val adds: Int = 0
-        override val requires: Int = 1
-        override val removes: Int = 1
+        override val requires: Int = 0
+        override val removes: Int = 0
 
         override fun toString(): String = "$mnemonic $branchLabel"
     }
@@ -309,8 +358,8 @@ sealed class Instruction {
     ) : Instruction() {
         override val mnemonic: String = label
         override val adds: Int = 0
-        override val requires: Int = 1
-        override val removes: Int = 1
+        override val requires: Int = 0
+        override val removes: Int = 0
 
         override fun toString(): String = StringBuilder()
             .appendLine("$mnemonic:")

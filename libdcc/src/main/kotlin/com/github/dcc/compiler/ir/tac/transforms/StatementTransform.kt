@@ -34,7 +34,8 @@ class MethodTransform(
 
         return Program.Method(
             index = methods.indexOfFirst { it.signature == value.signature },
-            body = instructionsOf(value.block.statements.flatMap { statementTransform.transform(it) })
+            body = instructionsOf(value.block.statements.flatMap { statementTransform.transform(it) }),
+            symbols = value.symbols
         )
 
     }
@@ -131,15 +132,43 @@ class StatementTransform(
             }
             is DecafStatement.Return -> {
                 instructions {
-                    +exprTransform.transform(value.expression)
-                    +Instruction.Return
+                    value.expression?.also {
+                        +exprTransform.transform(it)
+                    }
+
+                    if(value.expression?.type is Type.Int)
+                        +Instruction.IReturn
+                    else
+                        +Instruction.Return
                 }
             }
             is DecafStatement.Assignment -> {
                 instructions {
-                    +locationTransform.transform(value.location)
-                    +exprTransform.transform(value.expression)
-                    +Instruction.StoreRef
+
+                    val (index, isGlobal) = locationTransform.getIndexAndGlob(value.location.name)
+
+                    if(value.location.type == Type.Int && value.location !is DecafExpression.Location.ArrayLocation
+                        && value.location.subLocation == null && value.location.context == null && !isGlobal) {
+                        locationTransform.disableLoad()
+                        +exprTransform.transform(value.expression)
+                        locationTransform.enableLoad()
+                        +Instruction.IStore(index)
+                    } else {
+                        locationTransform.disableLoad()
+                        +locationTransform.transform(value.location)
+                        locationTransform.enableLoad()
+                        +exprTransform.transform(value.expression)
+
+
+                        if(value.expression.type == Type.Int) {
+                            when(value.location) {
+                                is DecafExpression.Location.ArrayLocation -> +Instruction.IAStore
+                                is DecafExpression.Location.VarLocation -> +Instruction.StoreRef
+                            }
+                        } else
+                            +Instruction.StoreRef
+                    }
+
                 }
             }
             is DecafStatement.Expression -> {
@@ -149,11 +178,11 @@ class StatementTransform(
             }
         }
 
-        if(instructions.stack() > 0) {
+        /*if(instructions.stack() > 0) {
             repeat(instructions.stack()) {
                 instructions.add(Instruction.Pop)
             }
-        }
+        }*/
 
         return if(needsToBeLabeled) {
             instructionsOf(
@@ -285,27 +314,46 @@ class LocationTransform(
 
     private val exprTransform = ExpressionTransform(global, local, methods, types)
 
-    override fun transform(value: DecafExpression.Location): Instruction.Instructions {
-        val localIndex = local.localSymbolIndex(value.name)
+    private var load = true
 
-        val (index, isGlobal) = if(0 > localIndex)
-            global.localSymbolIndex(value.name, skipGlobals = false) to true
-        else
-            localIndex to false
+    fun enableLoad() { load = true }
+
+    fun disableLoad() { load = false }
+
+    override fun transform(value: DecafExpression.Location): Instruction.Instructions {
+        val (index, isGlobal) = getIndexAndGlob(value.name)
 
         return instructions {
-            +loadVar(index, isGlobal)
 
-            if(value is DecafExpression.Location.ArrayLocation) {
-                +exprTransform.transform(value.index)
-                +Instruction.LoadArray
-            }
+            if(value.type == Type.Int && value !is DecafExpression.Location.ArrayLocation
+                && value.subLocation == null && value.context == null && !isGlobal) {
+                +Instruction.ILoadLocal(index)
+            } else {
+                +loadVar(index, isGlobal)
 
-            if(value.subLocation != null && value.context != null) {
-               +subLocation(value.subLocation, value.context)
+                if(value is DecafExpression.Location.ArrayLocation) {
+                    +exprTransform.transform(value.index)
+
+                    if(value.type is Type.Int && load) {
+                        +Instruction.ILoadArray
+                    } else
+                        +Instruction.LoadArray
+                }
+
+                if(value.subLocation != null && value.context != null) {
+                    +subLocation(value.subLocation, value.context)
+                }
             }
 
         }
+    }
+
+    fun getIndexAndGlob(name: String): Pair<Int, Boolean> {
+        val localIndex = local.localSymbolIndex(name)
+        return if(0 > localIndex)
+            global.localSymbolIndex(name, skipGlobals = false) to true
+        else
+            localIndex to false
     }
 
     private fun subLocation(location: DecafExpression.Location, context: Type.Struct): Instruction.Instructions {
@@ -317,7 +365,7 @@ class LocationTransform(
 
             if(location is DecafExpression.Location.ArrayLocation) {
                 +exprTransform.transform(location.index)
-                +Instruction.LoadArray
+                //+Instruction.LoadArray
             }
 
             if(location.subLocation != null && location.context != null) {

@@ -18,28 +18,39 @@ data class LabeledBlock(
 
 sealed class DecafExpression : DecafElementsIR() {
 
+    abstract val type: Type
+
     data class MethodCall(
-        val signature: Declaration.Method.Signature,
+        val descriptor: Declaration.Method,
         val parameters: List<DecafExpression>,
-    ): DecafExpression()
+    ): DecafExpression() {
+        val signature: Declaration.Method.Signature
+            get() = descriptor.signature
+
+        override val type: Type
+            get() = descriptor.type
+    }
 
     sealed class Location(
         val name: String,
         val subLocation: Location?,
         val context: Type.Struct?,
+        override val type: Type
     ): DecafExpression() {
         class ArrayLocation(
             name: String,
             val index: DecafExpression,
             subLocation: Location?,
             context: Type.Struct?,
-        ): Location(name, subLocation, context)
+            type: Type
+        ): Location(name, subLocation, context, type)
 
         class VarLocation(
             name: String,
             subLocation: Location?,
             context: Type.Struct?,
-        ): Location(name, subLocation, context)
+            type: Type
+        ): Location(name, subLocation, context, type)
 
         internal fun flatten(): Collection<Location> {
             val all = mutableListOf(this)
@@ -63,7 +74,10 @@ sealed class DecafExpression : DecafElementsIR() {
 
     data class Constant(
         val value: Literal
-    ): DecafExpression()
+    ): DecafExpression() {
+        override val type: Type
+            get() = value.type
+    }
 
     data class ArithOp(
         val op1: DecafExpression,
@@ -71,6 +85,9 @@ sealed class DecafExpression : DecafElementsIR() {
         val operator: Arithmetic,
     ): DecafExpression() {
         override fun toString(): String = "$op1$op2${operator.op}"
+
+        override val type: Type
+            get() = Type.Int
     }
 
     data class EqOp(
@@ -79,6 +96,9 @@ sealed class DecafExpression : DecafElementsIR() {
         val operator: Equality,
     ): DecafExpression() {
         override fun toString(): String = "$op1$op2${operator.op}"
+
+        override val type: Type
+            get() = Type.Boolean
     }
 
     data class CompOp(
@@ -87,6 +107,9 @@ sealed class DecafExpression : DecafElementsIR() {
         val operator: Comparison,
     ): DecafExpression() {
         override fun toString(): String = "$op1$op2${operator.op}"
+
+        override val type: Type
+            get() = Type.Boolean
     }
 
     data class CondOp(
@@ -95,6 +118,9 @@ sealed class DecafExpression : DecafElementsIR() {
         val operator: Condition,
     ): DecafExpression() {
         override fun toString(): String = "$op1$op2${operator.op}"
+
+        override val type: Type
+            get() = Type.Boolean
     }
 
     data class UnaryOp(
@@ -102,6 +128,9 @@ sealed class DecafExpression : DecafElementsIR() {
         val operator: Unary,
     ): DecafExpression() {
         override fun toString(): String = "$op${operator.op}"
+
+        override val type: Type
+            get() = op.type
     }
 
 }
@@ -128,7 +157,7 @@ sealed class DecafStatement : DecafElementsIR() {
     ): DecafStatement()
 
     data class Return(
-        val expression: DecafExpression,
+        val expression: DecafExpression?,
     ): DecafStatement()
 
     data class Assignment(

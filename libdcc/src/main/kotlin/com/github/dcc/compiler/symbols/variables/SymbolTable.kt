@@ -57,10 +57,11 @@ class SymbolTable(
             parent.allLocals()
         } else emptyList()
 
-        return symbols + parentSymbols
+        return parentSymbols + symbols
     }
 
     fun localSymbolIndex(name: String, skipGlobals: Boolean = true): Int {
-        return allLocals(skipGlobals).indexOfFirst { it.name == name}
+        return allLocals(skipGlobals)
+            .indexOfFirst { it.name == name }
     }
 }

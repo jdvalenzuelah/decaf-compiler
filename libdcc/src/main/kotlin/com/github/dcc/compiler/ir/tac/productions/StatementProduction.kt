@@ -73,7 +73,7 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
     }
 
     override fun visitReturn_expr(ctx: DecafParser.Return_exprContext): DecafStatement.Return {
-        return DecafStatement.Return(currentScope.visitExpression(ctx.expression()))
+        return DecafStatement.Return(ctx.expression()?.let { currentScope.visitExpression(it) })
     }
 
     override fun visitMethod_call(ctx: DecafParser.Method_callContext): DecafStatement.MethodCall {

@@ -3,6 +3,7 @@ package com.github.dcc.compiler.ir
 import com.github.dcc.compiler.ir.tac.Instruction
 import com.github.dcc.compiler.symbols.ProgramSymbols
 import com.github.dcc.compiler.symbols.variables.SymbolTable
+import com.github.dcc.decaf.symbols.SymbolStore
 import java.lang.StringBuilder
 
 data class Program(
@@ -20,6 +21,7 @@ data class Program(
     data class Method(
         val index: Int,
         val body: Instruction.Instructions,
+        val symbols: SymbolTable
     ) {
         override fun toString(): String = StringBuilder()
             .appendLine(".method $index")

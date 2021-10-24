@@ -35,6 +35,8 @@ dependencies {
     implementation("org.antlr:antlr4:$antlrVersion")
     implementation("org.antlr:antlr4-runtime:$antlrVersion")
 
+    implementation(project(":aladin"))
+
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:$jUnitVersion")

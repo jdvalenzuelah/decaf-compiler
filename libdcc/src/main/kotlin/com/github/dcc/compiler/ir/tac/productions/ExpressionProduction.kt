@@ -12,7 +12,7 @@ import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
 
-class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private val structs: TypeStore): DecafBaseVisitor<DecafExpression>() {
+class ExpressionProduction(symbols: SymbolTable, private val methods: MethodStore, private val structs: TypeStore): DecafBaseVisitor<DecafExpression>() {
 
     private val contextualTypeResolver = ContextualTypeResolver(symbols, methods, structs)
 
@@ -66,11 +66,12 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private v
     }
 
     override fun visitMethod_call(ctx: DecafParser.Method_callContext): DecafExpression.MethodCall  {
+        val signature = Declaration.Method.Signature(
+            name = ctx.ID().text,
+            parametersType = ctx.arg().map { contextualTypeResolver.visitArg(it) }
+        )
         return DecafExpression.MethodCall(
-            signature = Declaration.Method.Signature(
-                name = ctx.ID().text,
-                parametersType = ctx.arg().map { contextualTypeResolver.visitArg(it) }
-            ),
+            descriptor = methods.first { it.signature == signature },
             parameters = ctx.arg().map { visitExpression(it.expression()) }
         )
 
@@ -87,7 +88,8 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private v
                 subLocation = if(ctx.sub_location() != null && varLocationType is Type.Struct)
                     visitSubLocation(ctx.sub_location().location(), varLocationType)
                 else null,
-                context = if(varLocationType is Type.Struct) varLocationType else null
+                context = if(varLocationType is Type.Struct) varLocationType else null,
+                type = varLocationType
             )
         } else {
             DecafExpression.Location.VarLocation(
@@ -95,7 +97,8 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private v
                 subLocation = if(ctx.sub_location() != null && varLocationType is Type.Struct)
                     visitSubLocation(ctx.sub_location().location(), varLocationType)
                 else null,
-                context = if(varLocationType is Type.Struct) varLocationType else null
+                context = if(varLocationType is Type.Struct) varLocationType else null,
+                type = varLocationType
             )
         }
     }
@@ -106,24 +109,28 @@ class ExpressionProduction(symbols: SymbolTable, methods: MethodStore, private v
 
         return if(isArray) {
             val name = ctx.var_location().location_array().ID().text
-            val type = parentStruct.properties.first { it.name == name }.type.asPlain() as? Type.Struct
+            val type = parentStruct.properties.first { it.name == name }.type.asPlain()
+            val structType = type as? Type.Struct
             DecafExpression.Location.ArrayLocation(
                 name = name,
                 index = visitExpression(ctx.var_location().location_array().expression()),
-                subLocation = if(ctx.sub_location() != null && type != null)
-                    visitSubLocation(ctx.sub_location().location(), type)
+                subLocation = if(ctx.sub_location() != null && structType != null)
+                    visitSubLocation(ctx.sub_location().location(), structType)
                 else null,
-                context = type,
+                context = structType,
+                type = type
             )
         } else {
             val name = ctx.var_location().ID().text
-            val type = parentStruct.properties.first { it.name == name }.type.asPlain() as? Type.Struct
+            val type = parentStruct.properties.first { it.name == name }.type.asPlain()
+            val structType = type as? Type.Struct
             DecafExpression.Location.VarLocation(
                 name = name,
-                subLocation = if(ctx.sub_location() != null && type != null)
-                    visitSubLocation(ctx.sub_location().location(), type)
+                subLocation = if(ctx.sub_location() != null && structType != null)
+                    visitSubLocation(ctx.sub_location().location(), structType)
                 else null,
-                context = type
+                context = structType,
+                type = type
             )
         }
 
