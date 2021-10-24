@@ -9,6 +9,7 @@ import java.io.PrintStream
 
 object Java {
     const val constructor = "<init>"
+    const val classInit = "<clinit>"
     object lang {
         const val pckg = "java.lang"
         val Object = ClassName(pckg, "Object")
@@ -19,14 +20,22 @@ object Java {
             val pckg = ClassName("java.lang", "System")
 
             val out = FieldSpec(emptySet(), "out", io.PrintStream.asType(), null)
+
+            val `in` = FieldSpec(emptySet(), "in", io.InputStream.asType(), null)
         }
     }
 
     object io {
         const val pckg = "java.io"
         val PrintStream = ClassName(pckg, "PrintStream")
+        val InputStream = ClassName(pckg, "InputStream")
 
         val println = MethodName(Java.io.PrintStream, "println")
 
+    }
+
+    object util {
+        val pkg = "java.util"
+        val Scanner = ClassName(pkg, "Scanner")
     }
 }

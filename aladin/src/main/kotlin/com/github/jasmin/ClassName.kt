@@ -5,6 +5,8 @@ class ClassName(name: String): JasminElement {
 
     val name: String =  name.replace(".", "/")
 
+    val init = MethodName(this, "<init>")
+
     override val serialize: String
         get() = name
 }

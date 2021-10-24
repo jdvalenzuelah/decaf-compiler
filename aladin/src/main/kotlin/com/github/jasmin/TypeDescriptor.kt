@@ -3,7 +3,8 @@ package com.github.jasmin
 import com.github.jasmin.java.Java
 
 sealed class TypeDescriptor(
-    val descriptor: kotlin.String
+    val descriptor: kotlin.String,
+    val atype: kotlin.String
 ): JasminElement {
 
     override val serialize: kotlin.String
@@ -11,13 +12,15 @@ sealed class TypeDescriptor(
 
     fun asArray() = Array(this)
 
-    open class Class(val className: ClassName) : TypeDescriptor("L${className.name};")
+    open class Class(val className: ClassName) : TypeDescriptor("L${className.name};", className.name)
 
     object String : Class(Java.lang.String)
 
-    object Integer : TypeDescriptor("I")
+    object Integer : TypeDescriptor("I", "int")
 
-    object Void : TypeDescriptor("V")
+    object Boolean : TypeDescriptor("Z", "boolean")
 
-    open class Array(val type: TypeDescriptor) : TypeDescriptor("[${type.descriptor}")
+    object Void : TypeDescriptor("V", "void")
+
+    open class Array(val type: TypeDescriptor) : TypeDescriptor("[${type.descriptor}", "[${type.descriptor}")
 }

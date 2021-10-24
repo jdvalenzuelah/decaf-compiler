@@ -19,6 +19,11 @@ data class MethodSpec(
         fun constructorBuilder()  = MethodSpecBuilder(null, Java.constructor)
             .addReturnType(TypeDescriptor.Void)
 
+        fun classInitializerBuilder()  = MethodSpecBuilder(null, Java.classInit)
+            .addModifier(MethodAccessModifier.STATIC)
+            .addReturnType(TypeDescriptor.Void)
+            .limitLocals(0)
+
     }
 
     override val serialize: String
