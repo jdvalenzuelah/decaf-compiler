@@ -17,9 +17,9 @@ import com.github.jasmin.spec.MethodSpec
 import com.github.jasmin.spec.builder.CodeBlockSpecBuilder
 
 
-class JasminGenerator : Backend<ClassSpec> {
+class JasminGenerator : Backend<JasminProgramSpec> {
 
-    override fun compile(program: Program): ClassSpec {
+    override fun compile(program: Program): JasminProgramSpec {
         val classSpec = ClassSpec.builder("Program")
             .superClass(Java.lang.Object)
             .addModifier(ClassAccessModifiers.PUBLIC)
@@ -27,9 +27,6 @@ class JasminGenerator : Backend<ClassSpec> {
             .addMethod(Generic.main)
             .addMethod(StdLib.InputInt)
             .addMethod(StdLib.OutputInt)
-
-
-
 
         if(program.symbols.symbolTable.symbols.isNotEmpty()) {
             val initializer = MethodSpec.classInitializerBuilder()
@@ -54,23 +51,117 @@ class JasminGenerator : Backend<ClassSpec> {
             classSpec.addMethod(method(program.symbols.methods, program.symbols.symbolTable.symbols, it))
         }
 
-        return classSpec.build()
+        val structs = program.symbols.types.map { struct(it) }
+
+        return JasminProgramSpec(
+            program = classSpec.build(),
+            structs = structs
+        )
     }
 
 
-    private fun field(variable: Declaration.Variable): FieldSpec {
-        return FieldSpec.builder(variable.name, getTypeDescriptor(variable.type))
-            .addModifier(FieldAccessModifiers.STATIC)
+    private fun struct(struct: Declaration.Struct): ClassSpec {
+        val constructor = MethodSpec.constructorBuilder()
+            .addModifier(MethodAccessModifier.PUBLIC)
+            .limitStack(1)
+            .limitLocals(1)
+
+        val constructorInit = CodeBlockSpec.builder()
+            .aload0()
+            .invokeSpecial(Java.lang.init, MethodDescriptor(emptyList(), TypeDescriptor.Void))
+
+        return ClassSpec.builder(struct.name)
+            .superClass(Java.lang.Object)
+            .addModifier(ClassAccessModifiers.PUBLIC)
+            .apply {
+                struct.properties.forEach { property ->
+                    addField(field(property, isStatic = false))
+                    fieldInitializer(property, constructorInit, ClassName(struct.name), isStatic = false)
+                }
+            }
+            .addMethod(
+                constructor
+                    .addCodeBlock(
+                        constructorInit
+                            .returns()
+                            .build()
+                    )
+                    .build()
+            )
             .build()
     }
 
-    private fun fieldInitializer(variable: Declaration.Variable, codeSpec: CodeBlockSpecBuilder): CodeBlockSpecBuilder {
-        when(variable.type) {
+    private fun field(variable: Declaration.Variable, isStatic: Boolean = true): FieldSpec =
+        field(variable.name, variable.type, isStatic)
+
+    private fun field(variable: Declaration.Parameter, isStatic: Boolean = true): FieldSpec =
+        field(variable.name, variable.type, isStatic)
+
+    private fun field(name: String, type: Type, isStatic: Boolean = true): FieldSpec {
+        return FieldSpec.builder(name, getTypeDescriptor(type))
+            .addModifier(FieldAccessModifiers.PUBLIC)
+            .apply { if(isStatic) addModifier(FieldAccessModifiers.STATIC) }
+            .build()
+    }
+
+    private fun fieldInitializer(
+        variable: Declaration.Variable,
+        codeSpec: CodeBlockSpecBuilder,
+        parent: ClassName = ClassName("Program"),
+        isStatic: Boolean = true
+    ): CodeBlockSpecBuilder = fieldInitializer(variable.type, variable.name, codeSpec, parent, isStatic)
+
+    private fun fieldInitializer(
+        variable: Declaration.Parameter,
+        codeSpec: CodeBlockSpecBuilder,
+        parent: ClassName = ClassName("Program"),
+        isStatic: Boolean = true
+    ): CodeBlockSpecBuilder = fieldInitializer(variable.type, variable.name, codeSpec, parent, isStatic)
+
+    private fun fieldInitializer(
+        type: Type,
+        name: String,
+        codeSpec: CodeBlockSpecBuilder,
+        parent: ClassName = ClassName("Program"),
+        isStatic: Boolean = true
+    ): CodeBlockSpecBuilder {
+        if(!isStatic)
+            codeSpec.aload0()
+        when(type) {
             is Type.Array -> {
-                codeSpec.ldc(Constant.Int(variable.type.size))
-                codeSpec.newarray(getTypeDescriptor(variable.type.type))
-                codeSpec.putStatic(ClassName("Program"), FieldSpec(emptySet(), variable.name, getTypeDescriptor(variable.type)))
+                //TODO: Check if works with structs
+                codeSpec.ldc(Constant.Int(type.size))
+                codeSpec.newarray(getTypeDescriptor(type.type))
+                if(isStatic)
+                    codeSpec.putStatic(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+                else
+                    codeSpec.putField(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
             }
+            is Type.Int, is Type.Boolean -> {
+                codeSpec.ldc(Constant.Int(0))
+                if(isStatic)
+                    codeSpec.putStatic(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+                else
+                    codeSpec.putField(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+            }
+            is Type.Struct -> {
+                val structClass = ClassName(type.name)
+                codeSpec.new(structClass)
+                codeSpec.dup()
+                codeSpec.invokeSpecial(MethodName(structClass, Java.constructor), MethodDescriptor(emptyList(), TypeDescriptor.Void))
+                if(isStatic)
+                    codeSpec.putStatic(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+                else
+                    codeSpec.putField(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+            }
+            is Type.Char -> {
+                codeSpec.ldc(Constant.Str(""))
+                if(isStatic)
+                    codeSpec.putStatic(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+                else
+                    codeSpec.putField(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
+            }
+            is Type.ArrayUnknownSize, Type.Nothing, Type.Void -> error("ilegal type $type")
         }
         return codeSpec
     }
@@ -240,12 +331,12 @@ class JasminGenerator : Backend<ClassSpec> {
             is Instruction.Return -> codeSpec.returns()
             is Instruction.ILoadArray -> codeSpec.iaload()
             is Instruction.LoadArray -> {}
-            is Instruction.LoadField -> error("Not implemented")
-            is Instruction.LoadLocal -> error("Not implemented")
-            is Instruction.StoreGlobal -> error("Not implemented")
-            is Instruction.StoreLocal -> error("Not implemented")
-            is Instruction.StoreRef -> error("Not implemented")
-            is Instruction.SubUnary -> error("Not implemented")
+            is Instruction.LoadField -> {}
+            is Instruction.LoadLocal -> {}
+            is Instruction.StoreGlobal -> {}
+            is Instruction.StoreLocal -> {}
+            is Instruction.StoreRef -> {}
+            is Instruction.SubUnary -> {}
         }
         return codeSpec
     }

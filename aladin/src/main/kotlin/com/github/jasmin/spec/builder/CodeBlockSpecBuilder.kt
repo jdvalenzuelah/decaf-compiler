@@ -96,6 +96,10 @@ class CodeBlockSpecBuilder {
         instructions.add(WithParams.putstatic(parent, fieldSpec.name, fieldSpec.type))
     }
 
+    fun putField(parent: ClassName, fieldSpec: FieldSpec) = apply {
+        instructions.add(WithParams.putfield(parent, fieldSpec.name, fieldSpec.type))
+    }
+
     fun ldc(constant: Constant) = apply {
         instructions.add(WithParams.ldc(constant))
     }

@@ -53,6 +53,18 @@ sealed class WithParams : Instruction {
 
     }
 
+    data class putfield(
+        val parent: ClassName,
+        val name: String,
+        val descriptor: TypeDescriptor,
+    ) : WithParams() {
+        override val mnemonic: String = "putfield"
+
+        override val serialize: String
+            get() = "$mnemonic ${parent.serialize}/$name ${descriptor.serialize}"
+
+    }
+
     data class label(
         val label: String
     ) : WithParams() {
