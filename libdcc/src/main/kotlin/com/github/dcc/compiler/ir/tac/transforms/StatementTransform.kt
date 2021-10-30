@@ -173,7 +173,7 @@ class StatementTransform(
                                     is Type.Struct, is Type.Char, is Type.ArrayUnknownSize, is Type.Array-> {
                                         when(value.location) {
                                             is DecafExpression.Location.ArrayLocation -> Instruction.AAStore
-                                            is DecafExpression.Location.VarLocation -> Instruction.StoreRef
+                                            is DecafExpression.Location.VarLocation -> Instruction.StoreRef(index)
                                         }
                                     }
                                     is Type.Nothing, is Type.Void -> error("Ilegal type $value")
@@ -366,7 +366,7 @@ class LocationTransform(
                 if(value is DecafExpression.Location.ArrayLocation) {
                     +exprTransform.transform(value.index)
 
-                    if(value.type is Type.Int && load) {
+                    if((value.type is Type.Int || value.type is Type.Boolean) && load) {
                         +Instruction.ILoadArray
                     } else
                         +Instruction.LoadArray

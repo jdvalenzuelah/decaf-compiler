@@ -118,22 +118,11 @@ sealed class Instruction {
         override fun toString(): String = "$mnemonic $index"
     }
 
-    data class StoreLocal(
-        val index: Int,
-    ): Instruction() {
-        override val adds = 0
-        override val removes = 1
-        override val requires = 1
-        override val mnemonic = "store"
-
-        override fun toString(): String = "$mnemonic $index"
-    }
-
     object LoadArray : Instruction() {
         override val adds = 1
         override val removes = 2
         override val requires = 2
-        override val mnemonic = "aload"
+        override val mnemonic = "aaload"
 
         override fun toString(): String = mnemonic
     }
@@ -170,13 +159,13 @@ sealed class Instruction {
         override fun toString(): String = "$mnemonic $index"
     }
 
-    object StoreRef: Instruction() {
+    data class StoreRef(val index: Int): Instruction() {
         override val adds = 0
         override val removes = 2
         override val requires = 2
         override val mnemonic = "storef"
 
-        override fun toString(): String = mnemonic
+        override fun toString(): String = "$mnemonic $index"
     }
 
     data class PutField(

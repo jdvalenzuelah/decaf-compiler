@@ -24,8 +24,10 @@ enum class NoParams(
     irem("irem"),
     iastore("iastore"),
     aastore("aastore"),
+    aaload("aaload"),
     dup("dup"),
     pop("pop"),
+    iconst_m1("iconst_m1 "),
 }
 
 sealed class WithParams : Instruction {

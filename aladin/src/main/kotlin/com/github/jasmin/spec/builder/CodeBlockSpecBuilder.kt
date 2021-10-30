@@ -29,6 +29,8 @@ class CodeBlockSpecBuilder {
 
     fun astore0() = apply { instructions.add(NoParams.astore_0) }
 
+    fun iconst_m1 () = apply { instructions.add(NoParams.iconst_m1 ) }
+
     fun astore(index: Int) = apply { instructions.add(WithParams.astore(index)) }
 
     fun iadd() = apply { instructions.add(NoParams.iadd) }
@@ -41,7 +43,9 @@ class CodeBlockSpecBuilder {
 
     fun iastore() = apply { instructions.add(NoParams.iastore) }
 
-    fun aastore() = apply { instructions.add(NoParams.iastore) }
+    fun aastore() = apply { instructions.add(NoParams.aastore) }
+
+    fun aaload() = apply { instructions.add(NoParams.aaload) }
 
     fun irem() = apply { instructions.add(NoParams.irem) }
 

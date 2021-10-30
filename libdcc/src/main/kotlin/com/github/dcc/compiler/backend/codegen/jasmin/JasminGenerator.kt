@@ -390,15 +390,12 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.IReturn -> codeSpec.ireturn()
             is Instruction.Return -> codeSpec.returns()
             is Instruction.ILoadArray -> codeSpec.iaload()
-            is Instruction.LoadArray -> {}
-            is Instruction.LoadField -> {}
-            is Instruction.LoadLocal -> {}
-            is Instruction.StoreGlobal -> {}
-            is Instruction.StoreLocal -> {}
-            is Instruction.StoreRef -> {}
-            is Instruction.SubUnary -> {}
             is Instruction.ALoadLocal -> codeSpec.aload(instruction.index)
             is Instruction.NewVar -> variableInitializer(instruction.index, instruction.type, codeSpec)
+            is Instruction.LoadArray -> codeSpec.aastore()
+            is Instruction.LoadLocal -> codeSpec.aload(instruction.index)
+            is Instruction.StoreRef -> codeSpec.astore(instruction.index)
+            is Instruction.SubUnary -> codeSpec.iconst_m1().imul()
         }
         return codeSpec
     }
