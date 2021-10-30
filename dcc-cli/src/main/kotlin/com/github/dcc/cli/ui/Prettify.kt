@@ -50,11 +50,11 @@ object Prettify {
     private fun errors(err: Iterable<Validated.Invalid<Error>>, file: File): String {
         val buf = StringBuilder()
         err.forEach { error ->
-            val error = when(val ce = error.e) {
+            val errorStr = when(val ce = error.e) {
                 is SemanticError -> semanticError(file.path, ce)
                 is SyntaxError -> syntaxError(file.path, ce)
             }
-            buf.append(error)
+            buf.append(errorStr)
             buf.appendLine()
         }
         return buf.toString()

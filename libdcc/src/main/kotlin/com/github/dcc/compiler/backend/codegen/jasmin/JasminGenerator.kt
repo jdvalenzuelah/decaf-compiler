@@ -18,7 +18,7 @@ import com.github.jasmin.spec.MethodSpec
 import com.github.jasmin.spec.builder.CodeBlockSpecBuilder
 
 
-class JasminGenerator : Backend<JasminProgramSpec> {
+object JasminGenerator : Backend<JasminProgramSpec> {
 
     override fun compile(program: Program): JasminProgramSpec {
         val classSpec = ClassSpec.builder("Program")

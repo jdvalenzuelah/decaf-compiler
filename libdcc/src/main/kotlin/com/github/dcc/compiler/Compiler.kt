@@ -1,5 +1,8 @@
 package com.github.dcc.compiler
 
+import com.github.dcc.compiler.backend.Dumpable
+import com.github.dcc.compiler.backend.Target
+import com.github.dcc.compiler.backend.codegen.jasmin.JasminGenerator
 import com.github.dcc.compiler.ir.Program
 import com.github.dcc.compiler.ir.ProgramTransform
 import com.github.dcc.compiler.semanticAnalysis.SemanticAnalysis
@@ -15,10 +18,11 @@ import java.io.InputStream
 
 class Compiler(
     input: InputStream,
+    private val target: Target,
 ) {
 
-    constructor(file: File) : this(file.inputStream())
-    constructor(code: String): this(code.byteInputStream())
+    constructor(file: File, target: Target = Target.JASMIN) : this(file.inputStream(), target)
+    constructor(code: String, target: Target = Target.JASMIN): this(code.byteInputStream(), target)
 
     private val syntaxErrorListener = SyntaxErrorListener()
 
@@ -50,9 +54,17 @@ class Compiler(
         data class SemanticError(val errors: Iterable<Validated.Invalid<Error>>): CompilationResult()
 
         data class Success(
+            val compiledSource: Dumpable,
             val ir: Program,
         ) : CompilationResult()
 
+    }
+
+    private fun compile(ir: Program): Dumpable {
+        return when(target) {
+            Target.JASMIN -> JasminGenerator.compile(ir)
+            Target.JAVA8 -> JasminGenerator.compile(ir)
+        }
     }
 
     fun compileSource(): CompilationResult {
@@ -74,7 +86,9 @@ class Compiler(
             symbols,
         )
 
-        return CompilationResult.Success(ir)
+        val compiled = compile(ir)
+
+        return CompilationResult.Success(compiled, ir)
     }
 
 }

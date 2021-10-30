@@ -22,6 +22,15 @@ application {
     mainClassName = "com.github.dcc.MainKt"
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        apiVersion = "1.4"
+        languageVersion = "1.4"
+        allWarningsAsErrors = true
+    }
+}
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))

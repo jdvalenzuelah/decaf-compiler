@@ -6,9 +6,11 @@ import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.dcc.cli.ui.Prettify
 import com.github.dcc.compiler.Compiler
+import com.github.dcc.compiler.backend.Target
 import java.io.File
 
 
@@ -32,14 +34,14 @@ object DCC : CliktCommand() {
     private val dumpIr by option("-ir", "--dump-ir", help = "Dump intermediate representation to file")
         .flag(default = false)
 
-    //TODO
     private val target by option("--target", help = "Generate code for the given target")
-        .default("") //TODO: Add default target
+        .enum<Target>(ignoreCase = true)
+        .default(Target.JASMIN)
 
 
 
     override fun run() {
-        val compiler = Compiler(file)
+        val compiler = Compiler(file, target)
 
         if(printParseTree) {
             compiler.reset() // make sure stream is at start
@@ -66,8 +68,10 @@ object DCC : CliktCommand() {
                 }
             }
 
-            val isError = result !is Compiler.CompilationResult.Success
-            echo(Prettify.compilationResult(result, file), err = isError)
+            if(result is Compiler.CompilationResult.Success) {
+                result.compiledSource.dump()
+            }
+            echo(Prettify.compilationResult(result, file), err = result !is Compiler.CompilationResult.Success)
 
         }
     }
