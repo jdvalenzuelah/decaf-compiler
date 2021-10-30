@@ -1,6 +1,7 @@
 package com.github.dcc.compiler.ir.tac
 
 import com.github.dcc.decaf.literals.Literal
+import com.github.dcc.decaf.types.Type
 import java.lang.StringBuilder
 import kotlin.math.max
 
@@ -9,15 +10,15 @@ class InstructionsBuilder {
     private val instructions = mutableListOf<Instruction>()
 
     operator fun Collection<Instruction>.unaryPlus() {
-        instructions.addAll(this)
+        instructions.addAll(this@unaryPlus)
     }
 
     operator fun Iterable<Instruction>.unaryPlus() {
-        instructions.addAll(this)
+        instructions.addAll(this@unaryPlus)
     }
 
     operator fun Instruction.unaryPlus() {
-        instructions.add(this)
+        instructions.add(this@unaryPlus)
     }
 
     fun build() = Instruction
@@ -95,6 +96,17 @@ sealed class Instruction {
         override fun toString(): String = "${mnemonic}_$index"
     }
 
+    data class ALoadLocal(
+        val index: Int
+    ): Instruction() {
+        override val adds = 1
+        override val removes = 0
+        override val requires = 0
+        override val mnemonic = "aload"
+
+        override fun toString(): String = "${mnemonic}_$index"
+    }
+
     data class LoadGlobal(
         val index: Int
     ): Instruction() {
@@ -136,7 +148,8 @@ sealed class Instruction {
     }
 
     data class LoadField(
-        val index: Int
+        val index: Int,
+        val parent: Type.Struct,
     ) : Instruction() {
         override val adds = 1
         override val removes = 1
@@ -166,11 +179,32 @@ sealed class Instruction {
         override fun toString(): String = mnemonic
     }
 
+    data class PutField(
+        val index: Int,
+        val parent: Type.Struct,
+    ): Instruction() {
+        override val adds = 0
+        override val removes = 2
+        override val requires = 2
+        override val mnemonic = "putfield"
+
+        override fun toString(): String = "$mnemonic $index $parent"
+    }
+
     object IAStore: Instruction() {
         override val adds = 0
         override val removes = 2
         override val requires = 2
         override val mnemonic = "iastore"
+
+        override fun toString(): String = mnemonic
+    }
+
+    object AAStore: Instruction() {
+        override val adds = 0
+        override val removes = 2
+        override val requires = 2
+        override val mnemonic = "aastore"
 
         override fun toString(): String = mnemonic
     }

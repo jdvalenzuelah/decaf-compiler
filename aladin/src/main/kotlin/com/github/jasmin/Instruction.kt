@@ -23,6 +23,7 @@ enum class NoParams(
     imul("imul"),
     irem("irem"),
     iastore("iastore"),
+    aastore("aastore"),
     dup("dup"),
     pop("pop"),
 }
@@ -59,6 +60,18 @@ sealed class WithParams : Instruction {
         val descriptor: TypeDescriptor,
     ) : WithParams() {
         override val mnemonic: String = "putfield"
+
+        override val serialize: String
+            get() = "$mnemonic ${parent.serialize}/$name ${descriptor.serialize}"
+
+    }
+
+    data class getfield(
+        val parent: ClassName,
+        val name: String,
+        val descriptor: TypeDescriptor,
+    ) : WithParams() {
+        override val mnemonic: String = "getfield"
 
         override val serialize: String
             get() = "$mnemonic ${parent.serialize}/$name ${descriptor.serialize}"
@@ -163,10 +176,28 @@ sealed class WithParams : Instruction {
             get() = "$mnemonic ${type.atype}"
     }
 
+    data class anewarray(
+        val type: TypeDescriptor
+    ) : WithParams() {
+        override val mnemonic: String = "anewarray"
+
+        override val serialize: String
+            get() = "$mnemonic ${type.atype}"
+    }
+
     data class iload(
         val index: Int
     ) : WithParams() {
         override val mnemonic: String = "iload"
+
+        override val serialize: String
+            get() = "$mnemonic $index"
+    }
+
+    data class aload(
+        val index: Int
+    ) : WithParams() {
+        override val mnemonic: String = "aload"
 
         override val serialize: String
             get() = "$mnemonic $index"

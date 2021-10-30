@@ -160,13 +160,30 @@ class StatementTransform(
                         +exprTransform.transform(value.expression)
 
 
-                        if(value.expression.type == Type.Int) {
-                            when(value.location) {
-                                is DecafExpression.Location.ArrayLocation -> +Instruction.IAStore
-                                is DecafExpression.Location.VarLocation -> +Instruction.StoreRef
+
+                        if(value.location.context == null && value.location.subLocation == null) {
+                            +when(value.expression.type) {
+                                is Type.Int, is Type.Boolean -> {
+                                    when(value.location) {
+                                        is DecafExpression.Location.ArrayLocation -> Instruction.IAStore
+                                        is DecafExpression.Location.VarLocation -> Instruction.IStore(index)
+                                    }
+                                }
+                                is Type.Struct, is Type.Char, is Type.ArrayUnknownSize, is Type.Array-> {
+                                    when(value.location) {
+                                        is DecafExpression.Location.ArrayLocation -> Instruction.AAStore
+                                        is DecafExpression.Location.VarLocation -> Instruction.StoreRef
+                                    }
+                                }
+                                is Type.Nothing, is Type.Void -> error("Ilegal type $value")
                             }
-                        } else
-                            +Instruction.StoreRef
+                        } else {
+                            val lastContext = value.location.flatten().last { it.context != null }.context!!
+                            val lastLocation = value.location.flatten().last()
+                            val fieldIndex = locationTransform.getFieldIndex(lastLocation, lastContext)
+                            +Instruction.PutField(fieldIndex, lastContext)
+                        }
+
                     }
 
                 }
@@ -178,11 +195,11 @@ class StatementTransform(
             }
         }
 
-        /*if(instructions.stack() > 0) {
+        if(instructions.stack() > 0) {
             repeat(instructions.stack()) {
                 instructions.add(Instruction.Pop)
             }
-        }*/
+        }
 
         return if(needsToBeLabeled) {
             instructionsOf(
@@ -297,7 +314,7 @@ class ExpressionTransform(
         }
 
         check(instructions.stack() > 0) {
-            "stack for expression $value is empty!"
+            "stack for expression $value is empty! $instructions"
         }
 
         return instructions
@@ -320,16 +337,21 @@ class LocationTransform(
 
     fun disableLoad() { load = false }
 
+    fun compareAndSet(expected: Boolean, value: Boolean) { if(load == expected) load = value }
+
     override fun transform(value: DecafExpression.Location): Instruction.Instructions {
         val (index, isGlobal) = getIndexAndGlob(value.name)
-
         return instructions {
-
-            if(value.type == Type.Int && value !is DecafExpression.Location.ArrayLocation
+            if(value !is DecafExpression.Location.ArrayLocation
                 && value.subLocation == null && value.context == null && !isGlobal) {
-                +Instruction.ILoadLocal(index)
+                +when(value.type) {
+                    is Type.Int, Type.Boolean -> Instruction.ILoadLocal(index)
+                    is Type.Struct, is Type.Char,
+                    is Type.Array, is Type.ArrayUnknownSize -> Instruction.ALoadLocal(index)
+                    is Type.Nothing, is Type.Void -> error("Ilegal type for $value")
+                }
             } else {
-                +loadVar(index, isGlobal)
+                +loadVar(index, isGlobal, value.type)
 
                 if(value is DecafExpression.Location.ArrayLocation) {
                     +exprTransform.transform(value.index)
@@ -357,15 +379,14 @@ class LocationTransform(
     }
 
     private fun subLocation(location: DecafExpression.Location, context: Type.Struct): Instruction.Instructions {
-        val structContext = types.first { it.name == context.name }
-        val fieldIndex = structContext.properties.indexOfFirst { it.name == location.name }
+        val fieldIndex = getFieldIndex(location, context)
 
         return instructions {
-            +Instruction.LoadField(fieldIndex)
+            if(load || (location.subLocation != null && location.context != null))
+                +Instruction.LoadField(fieldIndex, context)
 
             if(location is DecafExpression.Location.ArrayLocation) {
                 +exprTransform.transform(location.index)
-                //+Instruction.LoadArray
             }
 
             if(location.subLocation != null && location.context != null) {
@@ -376,7 +397,20 @@ class LocationTransform(
 
     }
 
-    private fun loadVar(index: Int, isGlobal: Boolean): Instruction =
-        if(isGlobal) Instruction.LoadGlobal(index) else Instruction.LoadLocal(index)
+    fun getFieldIndex(location: DecafExpression.Location, context: Type.Struct): Int {
+        val structContext = types.first { it.name == context.name }
+        return structContext.properties.indexOfFirst { it.name == location.name }
+    }
+
+    private fun loadVar(index: Int, isGlobal: Boolean, type: Type): Instruction {
+        return if(isGlobal)
+            Instruction.LoadGlobal(index)
+        else {
+            when(type) {
+                is Type.Struct -> Instruction.ALoadLocal(index)
+                else -> Instruction.LoadLocal(index)
+            }
+        }
+    }
 
 }

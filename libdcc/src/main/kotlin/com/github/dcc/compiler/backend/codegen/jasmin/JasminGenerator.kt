@@ -7,6 +7,7 @@ import com.github.dcc.decaf.literals.Literal
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.MethodStore
 import com.github.dcc.decaf.symbols.SymbolStore
+import com.github.dcc.decaf.symbols.TypeStore
 import com.github.dcc.decaf.types.Type
 import com.github.jasmin.*
 import com.github.jasmin.java.Java
@@ -48,7 +49,7 @@ class JasminGenerator : Backend<JasminProgramSpec> {
         }
 
         program.methods.forEach {
-            classSpec.addMethod(method(program.symbols.methods, program.symbols.symbolTable.symbols, it))
+            classSpec.addMethod(method(program.symbols.methods, program.symbols.symbolTable.symbols, program.symbols.types, it))
         }
 
         val structs = program.symbols.types.map { struct(it) }
@@ -129,9 +130,11 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             codeSpec.aload0()
         when(type) {
             is Type.Array -> {
-                //TODO: Check if works with structs
                 codeSpec.ldc(Constant.Int(type.size))
-                codeSpec.newarray(getTypeDescriptor(type.type))
+                if(type.type is Type.Int)
+                    codeSpec.newarray(getTypeDescriptor(type.type))
+                else
+                    codeSpec.anewarray(getTypeDescriptor(type.type))
                 if(isStatic)
                     codeSpec.putStatic(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
                 else
@@ -166,7 +169,7 @@ class JasminGenerator : Backend<JasminProgramSpec> {
         return codeSpec
     }
 
-    private fun method(_methods: MethodStore, globals: SymbolStore, method: Program.Method): MethodSpec {
+    private fun method(_methods: MethodStore, globals: SymbolStore, types: TypeStore, method: Program.Method): MethodSpec {
 
         val methods = _methods.toList()
         val methodDecl = methods[method.index]
@@ -184,7 +187,7 @@ class JasminGenerator : Backend<JasminProgramSpec> {
 
         val codeSpec = CodeBlockSpec.builder()
         method.body.forEach { instruction ->
-            addInstruction(codeSpec, methods, globals, instruction)
+            addInstruction(codeSpec, methods, globals, types, instruction)
         }
 
         return methodSpec
@@ -192,9 +195,10 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             .build()
     }
 
-    private fun addInstruction(codeSpec: CodeBlockSpecBuilder, _methods: MethodStore, _globals: SymbolStore, instruction: Instruction): CodeBlockSpecBuilder {
+    private fun addInstruction(codeSpec: CodeBlockSpecBuilder, _methods: MethodStore, _globals: SymbolStore, _types: TypeStore, instruction: Instruction): CodeBlockSpecBuilder {
         val methods = _methods.toList()
         val globals = _globals.toList()
+        val types = _types.toList()
         when(instruction) {
             is Instruction.PushConstant -> {
                 val const = when(instruction.constant) {
@@ -206,7 +210,7 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             }
             is Instruction.LabeledBlock -> {
                 codeSpec.label(instruction.label)
-                instruction.instruction.forEach { addInstruction(codeSpec, methods, globals, it) }
+                instruction.instruction.forEach { addInstruction(codeSpec, methods, globals, types, it) }
             }
             is Instruction.Goto -> codeSpec.goto(instruction.branchLabel)
             is Instruction.Lt -> {
@@ -317,16 +321,25 @@ class JasminGenerator : Backend<JasminProgramSpec> {
                     )
                 )
             }
+            is Instruction.PutField -> {
+                val prop = types.first { it.name == instruction.parent.name }.properties[instruction.index]
+                codeSpec.putField(ClassName(instruction.parent.name), FieldSpec(emptySet(), prop.name, getTypeDescriptor(prop.type)))
+            }
+            is Instruction.LoadField -> {
+                val prop = types.first { it.name == instruction.parent.name }.properties[instruction.index]
+                codeSpec.getField(ClassName(instruction.parent.name), FieldSpec(emptySet(), prop.name, getTypeDescriptor(prop.type)))
+            }
             is Instruction.If -> codeSpec.ifne(instruction.branchLabel)
             is Instruction.Add -> codeSpec.iadd()
             is Instruction.Sub -> codeSpec.isub()
             is Instruction.Div -> codeSpec.idiv()
             is Instruction.Mul -> codeSpec.imul()
-            is Instruction.Pop -> codeSpec.pop()
+            is Instruction.Pop -> {}
             is Instruction.Rem -> codeSpec.irem()
             is Instruction.ILoadLocal -> codeSpec.iload(instruction.index)
             is Instruction.IStore -> codeSpec.istore(instruction.index)
             is Instruction.IAStore -> codeSpec.iastore()
+            is Instruction.AAStore -> codeSpec.aastore()
             is Instruction.IReturn -> codeSpec.ireturn()
             is Instruction.Return -> codeSpec.returns()
             is Instruction.ILoadArray -> codeSpec.iaload()

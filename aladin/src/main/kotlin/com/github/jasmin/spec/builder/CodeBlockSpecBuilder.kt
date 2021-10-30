@@ -17,6 +17,8 @@ class CodeBlockSpecBuilder {
 
     fun aload0() = apply { instructions.add(NoParams.aload_0) }
 
+    fun aload(index: Int) = apply { instructions.add(WithParams.iload(index)) }
+
     fun iaload() = apply { instructions.add(NoParams.iaload) }
 
     fun iload0() = apply { instructions.add(NoParams.iload_0) }
@@ -36,6 +38,8 @@ class CodeBlockSpecBuilder {
     fun imul() = apply { instructions.add(NoParams.imul) }
 
     fun iastore() = apply { instructions.add(NoParams.iastore) }
+
+    fun aastore() = apply { instructions.add(NoParams.iastore) }
 
     fun irem() = apply { instructions.add(NoParams.irem) }
 
@@ -100,11 +104,19 @@ class CodeBlockSpecBuilder {
         instructions.add(WithParams.putfield(parent, fieldSpec.name, fieldSpec.type))
     }
 
+    fun getField(parent: ClassName, fieldSpec: FieldSpec) = apply {
+        instructions.add(WithParams.getfield(parent, fieldSpec.name, fieldSpec.type))
+    }
+
     fun ldc(constant: Constant) = apply {
         instructions.add(WithParams.ldc(constant))
     }
 
     fun newarray(type: TypeDescriptor) = apply {
+        instructions.add(WithParams.newarray(type))
+    }
+
+    fun anewarray(type: TypeDescriptor) = apply {
         instructions.add(WithParams.newarray(type))
     }
 
