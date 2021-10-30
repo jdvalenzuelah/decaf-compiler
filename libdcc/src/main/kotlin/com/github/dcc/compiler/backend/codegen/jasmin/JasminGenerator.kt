@@ -350,6 +350,7 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.StoreLocal -> {}
             is Instruction.StoreRef -> {}
             is Instruction.SubUnary -> {}
+            is Instruction.ALoadLocal -> codeSpec.aload(instruction.index)
         }
         return codeSpec
     }
