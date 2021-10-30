@@ -1,11 +1,14 @@
 package com.github.dcc.compiler.ir.tac.productions
 
+import com.github.dcc.compiler.ir.decaf.DecafExpression
 import com.github.dcc.compiler.ir.decaf.DecafStatement
 import com.github.dcc.compiler.ir.decaf.LabeledBlock
+import com.github.dcc.compiler.resolvers.StaticTypeResolver
 import com.github.dcc.compiler.symbols.variables.SymbolTable
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.MethodStore
 import com.github.dcc.decaf.symbols.TypeStore
+import com.github.dcc.decaf.types.Type
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
 
@@ -33,7 +36,7 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
         val ifBlock = LabeledBlock(
             label = ifScope.scope.lineageAsString(),
             statements = DecafStatement.Block(
-                ctx.if_block().block().statement().map { ifScopeExpressions.visitStatement(it) }
+                ctx.if_block().block().block_el().map { ifScopeExpressions.visitBlock_el(it) }
             ),
             scope = ifScope
         )
@@ -44,7 +47,7 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
             LabeledBlock(
                 label = elseScope.scope.lineageAsString(),
                 statements = DecafStatement.Block(
-                    ctx.else_block().block().statement().map { elseScopeExpressions.visitStatement(it) }
+                    ctx.else_block().block().block_el().map { elseScopeExpressions.visitBlock_el(it) }
                 ),
                 scope = elseScope
             )
@@ -57,6 +60,28 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
         )
     }
 
+    override fun visitBlock_el(ctx: DecafParser.Block_elContext): DecafStatement {
+        return ctx.statement()?.let(::visitStatement) ?: ctx.var_decl()!!.let(::visitVar_decl)
+    }
+
+    override fun visitVar_decl(ctx: DecafParser.Var_declContext): DecafStatement {
+        return ctx.prop_decl()?.let(::visitProp_decl) ?: ctx.array_decl()!!.let(::visitArray_decl)
+    }
+
+    override fun visitProp_decl(ctx: DecafParser.Prop_declContext): DecafStatement {
+        return DecafStatement.VarDecl(
+            name = ctx.ID().text,
+            type = StaticTypeResolver().visitProp_decl(ctx) ?: Type.Nothing
+        )
+    }
+
+    override fun visitArray_decl(ctx: DecafParser.Array_declContext): DecafStatement {
+        return DecafStatement.VarDecl(
+            name = ctx.ID().text,
+            type = StaticTypeResolver().visitArray_decl(ctx) ?: Type.Nothing
+        )
+    }
+
     override fun visitWhile_expr(ctx: DecafParser.While_exprContext): DecafStatement.While {
         val whileScope = symbols.getNextChildScope("while")
         val whileScopeExpressions = StatementProduction(whileScope, methods, structs)
@@ -65,7 +90,7 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
             block = LabeledBlock(
                 label = whileScope.scope.lineageAsString(),
                 statements =  DecafStatement.Block(
-                    ctx.block().statement().map { whileScopeExpressions.visitStatement(it) }
+                    ctx.block().block_el().map { whileScopeExpressions.visitBlock_el(it) }
                 ),
                 scope = whileScope
             )
@@ -81,7 +106,7 @@ class StatementProduction(private val symbols: SymbolTable, private val methods:
     }
 
     override fun visitBlock(ctx: DecafParser.BlockContext): DecafStatement.Block {
-        return DecafStatement.Block(ctx.statement().map(::visitStatement))
+        return DecafStatement.Block(ctx.block_el().map(::visitBlock_el))
     }
 
     override fun visitAssignment(ctx: DecafParser.AssignmentContext): DecafStatement.Assignment {

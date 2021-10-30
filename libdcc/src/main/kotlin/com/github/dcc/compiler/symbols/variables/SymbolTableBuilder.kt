@@ -126,7 +126,7 @@ private class BlockSymbolBuilder private constructor(parent: SymbolTable, scopeL
 
     override fun visitBlock(ctx: DecafParser.BlockContext) {
         Logger.info("Visiting block: Resolving local block declarations at scope $scopeString")
-        ctx.var_decl().forEach(::visitVar_decl)
+        ctx.block_el().forEach { it.var_decl()?.let(::visitVar_decl) }
     }
 
     override fun visitVar_decl(ctx: DecafParser.Var_declContext) {
@@ -160,7 +160,7 @@ private class BlockScopeSymbolBuilder private constructor(val parent: SymbolTabl
 
     override fun visitBlock(ctx: DecafParser.BlockContext) {
         Logger.info("Resolving block variables label=$scopeLabel")
-        ctx.statement().forEach(::visitStatement)
+        ctx.block_el().forEach { it.statement()?.let(::visitStatement) }
     }
 
     override fun visitStatement(ctx: DecafParser.StatementContext) {

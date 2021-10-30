@@ -193,6 +193,12 @@ class StatementTransform(
                     +exprTransform.transform(value.expression)
                 }
             }
+            is DecafStatement.VarDecl -> {
+                val (index, _) = locationTransform.getIndexAndGlob(value.name)
+                instructions {
+                    +Instruction.NewVar(index, value.type)
+                }
+            }
         }
 
         if(instructions.stack() > 0) {

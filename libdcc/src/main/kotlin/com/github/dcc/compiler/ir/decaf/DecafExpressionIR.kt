@@ -77,6 +77,8 @@ sealed class DecafExpression : DecafElementsIR() {
     ): DecafExpression() {
         override val type: Type
             get() = value.type
+
+        override fun toString(): String = value.toString()
     }
 
     data class ArithOp(
@@ -167,6 +169,11 @@ sealed class DecafStatement : DecafElementsIR() {
 
     data class Expression(
         val expression: DecafExpression,
+    ): DecafStatement()
+
+    data class VarDecl(
+        val name: String,
+        val type: Type,
     ): DecafStatement()
 
 }

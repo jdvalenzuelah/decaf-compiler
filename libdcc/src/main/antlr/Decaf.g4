@@ -131,7 +131,9 @@ array_param: parameter_type ID OBRACKET CBRACKET;
 
 parameter_type: INT | CHAR | BOOLEAN;
 
-block: OCURLY (var_decl | statement)* CCURLY;
+block: OCURLY block_el* CCURLY;
+
+block_el: var_decl | statement;
 
 statement: if_expr | while_expr | return_expr | method_call SEMICOLON | block | assignment SEMICOLON | expression SEMICOLON;
 

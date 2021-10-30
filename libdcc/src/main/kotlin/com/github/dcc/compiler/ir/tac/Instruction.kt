@@ -402,4 +402,16 @@ sealed class Instruction {
             }
             .toString()
     }
+
+    data class NewVar(
+        val index: Int,
+        val type: Type
+    ) : Instruction() {
+        override val mnemonic: String = "init"
+        override val adds: Int = 0
+        override val requires: Int = 0
+        override val removes: Int = 0
+
+        override fun toString(): String = "$mnemonic $index"
+    }
 }

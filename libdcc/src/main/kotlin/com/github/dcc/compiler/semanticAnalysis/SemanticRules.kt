@@ -138,7 +138,7 @@ object SemanticRules {
 
         override fun visitBlock(ctx: DecafParser.BlockContext): Validated<Error> {
             Logger.info("Visiting code block")
-            return ctx.statement().map(::visitStatement).zip()
+            return ctx.block_el().mapNotNull { it.statement()?.let(::visitStatement) }.zip()
         }
 
         override fun visitStatement(ctx: DecafParser.StatementContext): Validated<Error> {
