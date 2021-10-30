@@ -176,6 +176,16 @@ sealed class WithParams : Instruction {
             get() = "$mnemonic ${type.atype}"
     }
 
+    data class multianewarray(
+        val type: TypeDescriptor,
+        val dimensions: Int,
+    ) : WithParams() {
+        override val mnemonic: String = "multianewarray"
+
+        override val serialize: String
+            get() = "$mnemonic ${type.atype} $dimensions"
+    }
+
     data class anewarray(
         val type: TypeDescriptor
     ) : WithParams() {
@@ -207,6 +217,15 @@ sealed class WithParams : Instruction {
         val index: Int
     ) : WithParams() {
         override val mnemonic: String = "istore"
+
+        override val serialize: String
+            get() = "$mnemonic $index"
+    }
+
+    data class astore(
+        val index: Int
+    ) : WithParams() {
+        override val mnemonic: String = "astore"
 
         override val serialize: String
             get() = "$mnemonic $index"

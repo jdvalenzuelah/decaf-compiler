@@ -162,20 +162,24 @@ class StatementTransform(
 
 
                         if(value.location.context == null && value.location.subLocation == null) {
-                            +when(value.expression.type) {
-                                is Type.Int, is Type.Boolean -> {
-                                    when(value.location) {
-                                        is DecafExpression.Location.ArrayLocation -> Instruction.IAStore
-                                        is DecafExpression.Location.VarLocation -> Instruction.IStore(index)
+                            +if(!isGlobal) {
+                                when(value.expression.type) {
+                                    is Type.Int, is Type.Boolean -> {
+                                        when(value.location) {
+                                            is DecafExpression.Location.ArrayLocation -> Instruction.IAStore
+                                            is DecafExpression.Location.VarLocation -> Instruction.IStore(index)
+                                        }
                                     }
-                                }
-                                is Type.Struct, is Type.Char, is Type.ArrayUnknownSize, is Type.Array-> {
-                                    when(value.location) {
-                                        is DecafExpression.Location.ArrayLocation -> Instruction.AAStore
-                                        is DecafExpression.Location.VarLocation -> Instruction.StoreRef
+                                    is Type.Struct, is Type.Char, is Type.ArrayUnknownSize, is Type.Array-> {
+                                        when(value.location) {
+                                            is DecafExpression.Location.ArrayLocation -> Instruction.AAStore
+                                            is DecafExpression.Location.VarLocation -> Instruction.StoreRef
+                                        }
                                     }
+                                    is Type.Nothing, is Type.Void -> error("Ilegal type $value")
                                 }
-                                is Type.Nothing, is Type.Void -> error("Ilegal type $value")
+                            } else {
+                                Instruction.StoreGlobal(index)
                             }
                         } else {
                             val lastContext = value.location.flatten().last { it.context != null }.context!!

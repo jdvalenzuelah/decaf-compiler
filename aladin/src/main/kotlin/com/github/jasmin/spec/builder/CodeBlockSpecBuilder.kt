@@ -29,6 +29,8 @@ class CodeBlockSpecBuilder {
 
     fun astore0() = apply { instructions.add(NoParams.astore_0) }
 
+    fun astore(index: Int) = apply { instructions.add(WithParams.astore(index)) }
+
     fun iadd() = apply { instructions.add(NoParams.iadd) }
 
     fun isub() = apply { instructions.add(NoParams.isub) }
@@ -114,6 +116,10 @@ class CodeBlockSpecBuilder {
 
     fun newarray(type: TypeDescriptor) = apply {
         instructions.add(WithParams.newarray(type))
+    }
+
+    fun multianewarray(type: TypeDescriptor, dimensions: Int) = apply {
+        instructions.add(WithParams.multianewarray(type, dimensions))
     }
 
     fun anewarray(type: TypeDescriptor) = apply {

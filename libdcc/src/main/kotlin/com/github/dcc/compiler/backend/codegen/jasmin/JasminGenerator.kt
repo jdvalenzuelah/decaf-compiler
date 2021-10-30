@@ -131,10 +131,14 @@ class JasminGenerator : Backend<JasminProgramSpec> {
         when(type) {
             is Type.Array -> {
                 codeSpec.ldc(Constant.Int(type.size))
-                if(type.type is Type.Int)
-                    codeSpec.newarray(getTypeDescriptor(type.type))
-                else
-                    codeSpec.anewarray(getTypeDescriptor(type.type))
+
+                when(type.type) {
+                    is Type.Int, Type.Boolean -> codeSpec.newarray(getTypeDescriptor(type.type))
+                    is Type.Struct, Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type))
+                    is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type.type), loadArraySizes(type.type, codeSpec, 2))
+                    else -> codeSpec.anewarray(getTypeDescriptor(type.type))
+                }
+
                 if(isStatic)
                     codeSpec.putStatic(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
                 else
@@ -167,6 +171,45 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             is Type.ArrayUnknownSize, Type.Nothing, Type.Void -> error("ilegal type $type")
         }
         return codeSpec
+    }
+
+    private fun variableInitializer(index: Int, type: Type, codeSpec: CodeBlockSpecBuilder) {
+
+        when(type) {
+            is Type.Struct -> {
+                val structClass = ClassName(type.name)
+                codeSpec.new(structClass)
+                    .dup()
+                    .invokeSpecial(MethodName(structClass, Java.classInit), MethodDescriptor(emptyList(), TypeDescriptor.Void))
+                    .astore(index)
+            }
+            is Type.Char -> {
+                codeSpec.ldc(Constant.Str(""))
+                    .astore(index)
+            }
+            is Type.Int, Type.Boolean -> {
+                codeSpec.ldc(Constant.Int(0))
+                    .istore(index)
+            }
+            is Type.Array -> {
+                val dimensions = loadArraySizes(type, codeSpec)
+                when(type.type) {
+                    is Type.Int, Type.Boolean -> codeSpec.newarray(getTypeDescriptor(type.type))
+                    is Type.Struct, Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type))
+                    is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type), dimensions)
+                    is Type.ArrayUnknownSize, is Type.Nothing, is Type.Void -> error("Ilegal type $type")
+                }
+
+            }
+            is Type.ArrayUnknownSize, is Type.Nothing, is Type.Void -> error("Ilegal type $type")
+        }
+    }
+
+    private fun loadArraySizes(type: Type.Array, codeSpec: CodeBlockSpecBuilder, dimensions: Int = 1): Int {
+        codeSpec.ldc(Constant.Int(type.size))
+        return if(type.type is Type.Array)
+            loadArraySizes(type.type, codeSpec, dimensions+1)
+        else dimensions
     }
 
     private fun method(_methods: MethodStore, globals: SymbolStore, types: TypeStore, method: Program.Method): MethodSpec {
@@ -311,6 +354,10 @@ class JasminGenerator : Backend<JasminProgramSpec> {
                 val field = globals[instruction.index]
                 codeSpec.getStatic(ClassName("Program"), FieldSpec(emptySet(), field.name, getTypeDescriptor(field.type)))
             }
+            is Instruction.StoreGlobal -> {
+                val field = globals[instruction.index]
+                codeSpec.putStatic(ClassName("Program"), FieldSpec(emptySet(), field.name, getTypeDescriptor(field.type)))
+            }
             is Instruction.MethodCall -> {
                 val method = methods[instruction.index]
                 codeSpec.invokeStatic(
@@ -351,6 +398,7 @@ class JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.StoreRef -> {}
             is Instruction.SubUnary -> {}
             is Instruction.ALoadLocal -> codeSpec.aload(instruction.index)
+            is Instruction.NewVar -> variableInitializer(instruction.index, instruction.type, codeSpec)
         }
         return codeSpec
     }
