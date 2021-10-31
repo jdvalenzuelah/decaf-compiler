@@ -180,7 +180,7 @@ object JasminGenerator : Backend<JasminProgramSpec> {
                 val structClass = ClassName(type.name)
                 codeSpec.new(structClass)
                     .dup()
-                    .invokeSpecial(MethodName(structClass, Java.classInit), MethodDescriptor(emptyList(), TypeDescriptor.Void))
+                    .invokeSpecial(MethodName(structClass, Java.constructor), MethodDescriptor(emptyList(), TypeDescriptor.Void))
                     .astore(index)
             }
             is Type.Char -> {
@@ -194,9 +194,9 @@ object JasminGenerator : Backend<JasminProgramSpec> {
             is Type.Array -> {
                 val dimensions = loadArraySizes(type, codeSpec)
                 when(type.type) {
-                    is Type.Int, Type.Boolean -> codeSpec.newarray(getTypeDescriptor(type.type))
-                    is Type.Struct, Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type))
-                    is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type), dimensions)
+                    is Type.Int, Type.Boolean -> codeSpec.newarray(getTypeDescriptor(type.type)).astore(index)
+                    is Type.Struct, Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type)).astore(index)
+                    is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type), dimensions).astore(index)
                     is Type.ArrayUnknownSize, is Type.Nothing, is Type.Void -> error("Ilegal type $type")
                 }
 
@@ -356,7 +356,13 @@ object JasminGenerator : Backend<JasminProgramSpec> {
             }
             is Instruction.StoreGlobal -> {
                 val field = globals[instruction.index]
-                codeSpec.putStatic(ClassName("Program"), FieldSpec(emptySet(), field.name, getTypeDescriptor(field.type)))
+                if(field.type is Type.Array) {
+                    when(field.type.type) {
+                        is Type.Int, is Type.Boolean -> codeSpec.iastore()
+                        else -> codeSpec.aastore()
+                    }
+                } else
+                    codeSpec.putStatic(ClassName("Program"), FieldSpec(emptySet(), field.name, getTypeDescriptor(field.type)))
             }
             is Instruction.MethodCall -> {
                 val method = methods[instruction.index]
@@ -392,7 +398,7 @@ object JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.ILoadArray -> codeSpec.iaload()
             is Instruction.ALoadLocal -> codeSpec.aload(instruction.index)
             is Instruction.NewVar -> variableInitializer(instruction.index, instruction.type, codeSpec)
-            is Instruction.LoadArray -> codeSpec.aastore()
+            is Instruction.LoadArray -> {}//codeSpec.aaload()
             is Instruction.LoadLocal -> codeSpec.aload(instruction.index)
             is Instruction.StoreRef -> codeSpec.astore(instruction.index)
             is Instruction.SubUnary -> codeSpec.iconst_m1().imul()

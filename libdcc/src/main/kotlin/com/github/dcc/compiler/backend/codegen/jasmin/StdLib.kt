@@ -1,6 +1,6 @@
 package com.github.dcc.compiler.backend.codegen.jasmin
 
-import com.github.dcc.compiler.backend.DecafStdLib
+import com.github.dcc.decaf.DecafStdLib
 import com.github.jasmin.MethodAccessModifier
 import com.github.jasmin.MethodDescriptor
 import com.github.jasmin.MethodName

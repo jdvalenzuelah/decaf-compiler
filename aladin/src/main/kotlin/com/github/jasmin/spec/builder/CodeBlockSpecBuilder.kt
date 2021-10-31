@@ -17,7 +17,7 @@ class CodeBlockSpecBuilder {
 
     fun aload0() = apply { instructions.add(NoParams.aload_0) }
 
-    fun aload(index: Int) = apply { instructions.add(WithParams.iload(index)) }
+    fun aload(index: Int) = apply { instructions.add(WithParams.aload(index)) }
 
     fun iaload() = apply { instructions.add(NoParams.iaload) }
 
@@ -127,7 +127,7 @@ class CodeBlockSpecBuilder {
     }
 
     fun anewarray(type: TypeDescriptor) = apply {
-        instructions.add(WithParams.newarray(type))
+        instructions.add(WithParams.anewarray(type))
     }
 
     fun invokeVirtual(methodName: MethodName, descriptor: MethodDescriptor) = apply {

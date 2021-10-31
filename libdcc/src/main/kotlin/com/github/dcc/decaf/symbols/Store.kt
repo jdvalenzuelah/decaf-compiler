@@ -11,10 +11,3 @@ typealias SymbolStore = SequentialStore<Declaration.Variable>
 typealias TypeStore = SequentialStore<Declaration.Struct>
 
 typealias MethodStore = SequentialStore<Declaration.Method>
-
-fun SymbolStore.findBySignatureOrNull(_signature: Signature): Declaration.Method? {
-    val parameters = _signature.parameters
-        .map { if(it is Type.Array) Type.ArrayUnknownSize(it.type) else it } // ignore array size
-    val signature = _signature.copy(parameters = parameters)
-    return filterIsInstance<Declaration.Method>().firstOrNull { it.signature() == signature }
-}

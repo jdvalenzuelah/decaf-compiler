@@ -8,7 +8,6 @@ import com.github.dcc.compiler.ir.Program
 import com.github.dcc.compiler.symbols.variables.SymbolTable
 import com.github.dcc.decaf.enviroment.lineageAsString
 import com.github.dcc.decaf.symbols.Declaration
-import com.github.dcc.decaf.symbols.signature
 import com.github.validation.Validated
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.Tree
@@ -82,7 +81,7 @@ object Prettify {
                 "index" to index.toString(),
                 "name" to it.name,
                 "type" to it.type.toString(),
-                "signature" to it.signature().toString()
+                "signature" to it.signature.toString()
             )
         }
         return table(listOf("index","name", "signature"), symbolRows)

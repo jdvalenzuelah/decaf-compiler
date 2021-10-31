@@ -1,4 +1,4 @@
-package com.github.dcc.compiler.backend
+package com.github.dcc.decaf
 
 interface DecafStdLib<M> {
     val InputInt: M
