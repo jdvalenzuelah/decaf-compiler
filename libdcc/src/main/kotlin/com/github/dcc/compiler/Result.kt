@@ -14,7 +14,7 @@ sealed class Error(
 
     data class SemanticError(
         val message: String,
-        override val context: ParserRuleContext
+        override val context: ParserRuleContext?
     ): Error(null)
 
 }

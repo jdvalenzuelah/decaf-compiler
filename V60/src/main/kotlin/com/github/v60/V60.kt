@@ -1,6 +1,8 @@
 package com.github.v60
 
 import com.github.dcc.compiler.Compiler
+import com.github.dcc.compiler.backend.Dumpable
+import com.github.dcc.compiler.backend.noOp
 import com.github.dcc.compiler.ir.Program
 import com.github.v60.ui.actionBar
 import com.github.v60.ui.console
@@ -26,7 +28,7 @@ class V60(
 
     private val code = KVar("")
     private val fileName = KVar("")
-    private val compilationResult = KVar<Compiler.CompilationResult>(Compiler.CompilationResult.Success(Program.empty()))
+    private val compilationResult = KVar<Compiler.CompilationResult>(Compiler.CompilationResult.Success(Dumpable.noOp(), Program.empty()))
 
     init {
         Kweb(port = port, debug = debug, plugins = listOf(ideStyle, fontAwesomePlugin)) {

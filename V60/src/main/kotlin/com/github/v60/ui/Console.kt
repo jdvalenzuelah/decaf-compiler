@@ -37,8 +37,8 @@ fun ElementCreator<*>.console(fileName: String, buildOutput: Compiler.Compilatio
     }
 }
 
-private val SemanticError.line: Int get() = context.start.line
-private val SemanticError.charPos: Int get() = context.start.charPositionInLine
+private val SemanticError.line: Int get() = context?.start?.line ?: -1
+private val SemanticError.charPos: Int get() = context?.start?.charPositionInLine ?: -1
 
 fun ElementCreator<*>.semanticError(error: SemanticError) {
     p(ide.error).text("line  ${error.line}:${error.charPos} ${error.message}")
