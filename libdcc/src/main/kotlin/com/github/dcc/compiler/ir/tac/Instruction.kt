@@ -218,15 +218,6 @@ sealed class Instruction {
         override fun toString(): String = "$mnemonic $constant"
     }
 
-    object Pop : Instruction() {
-        override val adds = 0
-        override val removes = 1
-        override val requires = 1
-        override val mnemonic = "pop"
-
-        override fun toString(): String = mnemonic
-    }
-
     data class MethodCall(
         val index: Int,
         val parameterCount: Int,

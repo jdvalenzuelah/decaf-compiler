@@ -42,16 +42,49 @@ class MethodTransform(
 
 }
 
+private interface LabelingStrategy {
+
+    val lastLabel: Int
+
+    fun getNextLabelAndIncrease(): String
+
+    fun getNextLabel(): String
+
+    fun getLabel(index: Int): String
+}
+
+private class AlphaNumericLabelingStrategy(init: Int = 0) : LabelingStrategy {
+
+    private val prefix = ('A'..'Z').toList()[init]
+
+    private var lastLabelIndex: Int = 0
+
+    override val lastLabel: Int
+        get() = lastLabelIndex
+
+    override fun getLabel(index: Int): String = "_L$prefix$index"
+
+    override fun getNextLabel(): String = getLabel(lastLabel)
+
+    override fun getNextLabelAndIncrease(): String {
+        val label = getNextLabel()
+        lastLabelIndex++
+        return label
+    }
+}
+
 class StatementTransform(
     val global: SymbolTable,
     val local: SymbolTable,
     val methods: MethodStore,
-    val types: TypeStore
+    val types: TypeStore,
+    private val depth: Int = 0,
 ): Transform<DecafStatement, Instruction.Instructions> {
 
     private val exprTransform = ExpressionTransform(global, local, methods, types)
     private val locationTransform = LocationTransform(global, local, methods, types)
-    private var lastLabel: Int = 0
+
+    private val labelStrategy: LabelingStrategy = AlphaNumericLabelingStrategy(depth)
 
     private var nextNeedsToBeLabeled: Boolean = false
 
@@ -68,14 +101,14 @@ class StatementTransform(
             }
             is DecafStatement.If -> {
                 val nextLabel = if(needsToBeLabeled) {
-                    getLabel(lastLabel+1)
+                    getLabel(labelStrategy.lastLabel+1)
                 } else getNextLabel()
                 instructions {
                     +exprTransform.transform(value.condition)
                     +Instruction.If(value.ifBlock.label)
 
                     if(value.elseBlock != null) {
-                        +StatementTransform(global, value.elseBlock.scope, methods, types)
+                        +StatementTransform(global, value.elseBlock.scope, methods, types, depth + 1)
                             .transform(value.elseBlock.statements)
                             .apply {
                                 lastOrNull()?.also {
@@ -89,7 +122,7 @@ class StatementTransform(
 
                     +Instruction.LabeledBlock(
                         label = value.ifBlock.label,
-                        instruction = StatementTransform(global, value.ifBlock.scope, methods, types)
+                        instruction = StatementTransform(global, value.ifBlock.scope, methods, types, depth + 1)
                             .transform(value.ifBlock.statements)
                     )
 
@@ -100,7 +133,7 @@ class StatementTransform(
                 val condLabel = "${value.block.label}#condition"
                 val bodyLabel = "${value.block.label}#body"
                 val nextLabel = if(needsToBeLabeled) {
-                    getLabel(lastLabel+1)
+                    getLabel(labelStrategy.lastLabel+1)
                 } else getNextLabel()
                 instructions {
                     +Instruction.LabeledBlock(
@@ -111,7 +144,7 @@ class StatementTransform(
                     +Instruction.Goto(nextLabel)
                     +Instruction.LabeledBlock(
                         label = bodyLabel,
-                        instruction = StatementTransform(global, value.block.scope, methods, types)
+                        instruction = StatementTransform(global, value.block.scope, methods, types, depth + 1)
                             .transform(value.block.statements).apply {
                             add(Instruction.Goto(condLabel))
                         }
@@ -205,12 +238,6 @@ class StatementTransform(
             }
         }
 
-        if(instructions.stack() > 0) {
-            repeat(instructions.stack()) {
-                instructions.add(Instruction.Pop)
-            }
-        }
-
         return if(needsToBeLabeled) {
             instructionsOf(
                 Instruction.LabeledBlock(
@@ -225,15 +252,11 @@ class StatementTransform(
         nextNeedsToBeLabeled = true
     }
 
-    private fun getNextLabelAndIncrease(): String {
-        val label = getNextLabel()
-        lastLabel++
-        return label
-    }
+    private fun getNextLabelAndIncrease(): String = labelStrategy.getNextLabelAndIncrease()
 
-    private fun getNextLabel(): String = getLabel(lastLabel)
+    private fun getNextLabel(): String = labelStrategy.getNextLabel()
 
-    private fun getLabel(index: Int) ="_L$index"
+    private fun getLabel(index: Int) = labelStrategy.getLabel(index)
 }
 
 class ExpressionTransform(
@@ -321,10 +344,6 @@ class ExpressionTransform(
                     }
                 }
             }
-        }
-
-        check(instructions.stack() > 0) {
-            "stack for expression $value is empty! $instructions"
         }
 
         return instructions

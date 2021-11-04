@@ -387,7 +387,6 @@ object JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.Sub -> codeSpec.isub()
             is Instruction.Div -> codeSpec.idiv()
             is Instruction.Mul -> codeSpec.imul()
-            is Instruction.Pop -> {}
             is Instruction.Rem -> codeSpec.irem()
             is Instruction.ILoadLocal -> codeSpec.iload(instruction.index)
             is Instruction.IStore -> codeSpec.istore(instruction.index)
