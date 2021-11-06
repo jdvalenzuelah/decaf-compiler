@@ -10,10 +10,11 @@ data class JasminProgramSpec(
 ): Dumpable {
 
     private val extension = ".j"
-    override fun dump(): Collection<File> {
-        val program = File("${program.name.name}$extension").apply { writeText(program.serialize) }
+    override fun dump(destination: File): Collection<File> {
+        require(destination.isDirectory) { "Destination of dump is not a directory!" }
+        val program = File("${destination.path}/${program.name.name}$extension").apply { writeText(program.serialize) }
         val structs = structs.map {
-            File("${it.name.name}$extension").apply { writeText(it.serialize) }
+            File("${destination.path}/${it.name.name}$extension").apply { writeText(it.serialize) }
         }
         return listOf(program) + structs
     }

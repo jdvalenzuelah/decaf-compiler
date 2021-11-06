@@ -5,7 +5,7 @@ import java.io.File
 
 interface Dumpable {
     companion object
-    fun dump(): Collection<File>
+    fun dump(destination: File): Collection<File>
 }
 
 fun interface Backend<I : Dumpable> {
@@ -13,5 +13,5 @@ fun interface Backend<I : Dumpable> {
 }
 
 fun Dumpable.Companion.noOp(): Dumpable = object : Dumpable {
-    override fun dump(): Collection<File> = emptyList()
+    override fun dump(destination: File): Collection<File> = emptyList()
 }
