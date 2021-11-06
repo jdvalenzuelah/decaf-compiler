@@ -10,16 +10,16 @@ import java.io.*
 
 class JasminAssemblyTest {
 
-    private val generatedFilesPath = "/tmp/"
+    private val generatedFilesFolder = File("/tmp/libdcc").apply { mkdirs() }
 
     private fun assemble(dumps: Dumpable) {
-        dumps.dump().forEach {
-            AssembleJasmin.assemble(it.reader(), it.name, FileOutputStream("$generatedFilesPath${it.nameWithoutExtension}.class"))
+        dumps.dump(generatedFilesFolder).forEach {
+            AssembleJasmin.assemble(it.reader(), it.name, FileOutputStream("${generatedFilesFolder.path}/${it.nameWithoutExtension}.class"))
         }
     }
 
     private fun execProgram(input: Iterable<Any> = emptyList()): String {
-        val process = Runtime.getRuntime().exec("java -noverify -cp $generatedFilesPath Program")
+        val process = Runtime.getRuntime().exec("java -noverify -cp ${generatedFilesFolder.path} Program")
 
         val processOutput = BufferedReader(InputStreamReader(process.inputStream))
         val processInput = BufferedWriter(OutputStreamWriter(process.outputStream))
