@@ -134,7 +134,22 @@ object JasminGenerator : Backend<JasminProgramSpec> {
 
                 when(type.type) {
                     is Type.Int, Type.Boolean -> codeSpec.newarray(getTypeDescriptor(type.type))
-                    is Type.Struct, Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type))
+                    is Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type))
+                    is Type.Struct -> {
+                        val structClass = ClassName(type.type.name)
+                        codeSpec.anewarray(getTypeDescriptor(type.type))
+
+                        repeat(type.size) { elementIndex ->
+                            codeSpec.aload0()
+                                .getField(ClassName(type.type.name), FieldSpec(emptySet(), name, getTypeDescriptor(type.type)))
+                                .ldc(Constant.Int(elementIndex))
+                                .new(structClass)
+                                .dup()
+                                .invokeSpecial(MethodName(structClass, Java.constructor), MethodDescriptor(emptyList(), TypeDescriptor.Void))
+                                .aastore()
+                        }
+
+                    }
                     is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type.type), loadArraySizes(type.type, codeSpec, 2))
                     else -> codeSpec.anewarray(getTypeDescriptor(type.type))
                 }
@@ -195,7 +210,24 @@ object JasminGenerator : Backend<JasminProgramSpec> {
                 val dimensions = loadArraySizes(type, codeSpec)
                 when(type.type) {
                     is Type.Int, Type.Boolean -> codeSpec.newarray(getTypeDescriptor(type.type)).astore(index)
-                    is Type.Struct, Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type)).astore(index)
+                    is Type.Char -> codeSpec.anewarray(getTypeDescriptor(type.type)).astore(index)
+                    is Type.Struct -> {
+                        val structClass = ClassName(type.type.name)
+                        codeSpec.anewarray(getTypeDescriptor(type.type))
+                            .dup()
+
+                        repeat(type.size) { elementIndex ->
+                            codeSpec.ldc(Constant.Int(elementIndex))
+                                .new(structClass)
+                                .dup()
+                                .invokeSpecial(MethodName(structClass, Java.constructor), MethodDescriptor(emptyList(), TypeDescriptor.Void))
+                                .aastore()
+                            if(type.size > elementIndex)
+                                codeSpec.dup()
+                        }
+
+                        codeSpec.astore(index)
+                    }
                     is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type), dimensions).astore(index)
                     is Type.ArrayUnknownSize, is Type.Nothing, is Type.Void -> error("Ilegal type $type")
                 }
