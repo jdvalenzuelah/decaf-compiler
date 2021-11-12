@@ -61,6 +61,7 @@ class JasminAssemblyTest {
         assertSuccessAndExpectedOutput(getFileFromResources("/samples/param.decaf"), "17")
         assertSuccessAndExpectedOutput(getFileFromResources("/samples/quicksort.decaf"), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10", 10 downTo 1)
         assertSuccessAndExpectedOutput(getFileFromResources("/samples/scope.decaf"), "3\n5\n6\n7\n8\n5\n4")
+        assertSuccessAndExpectedOutput(getFileFromResources("/samples/structs.decaf"), "2")
     }
 
 }

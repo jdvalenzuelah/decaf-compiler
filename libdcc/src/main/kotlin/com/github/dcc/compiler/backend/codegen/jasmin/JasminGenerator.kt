@@ -138,17 +138,18 @@ object JasminGenerator : Backend<JasminProgramSpec> {
                     is Type.Struct -> {
                         val structClass = ClassName(type.type.name)
                         codeSpec.anewarray(getTypeDescriptor(type.type))
+                            .putField(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
 
                         repeat(type.size) { elementIndex ->
                             codeSpec.aload0()
-                                .getField(ClassName(type.type.name), FieldSpec(emptySet(), name, getTypeDescriptor(type.type)))
+                                .getField(parent, FieldSpec(emptySet(), name, getTypeDescriptor(type)))
                                 .ldc(Constant.Int(elementIndex))
                                 .new(structClass)
                                 .dup()
                                 .invokeSpecial(MethodName(structClass, Java.constructor), MethodDescriptor(emptyList(), TypeDescriptor.Void))
                                 .aastore()
                         }
-
+                        return codeSpec
                     }
                     is Type.Array -> codeSpec.multianewarray(getTypeDescriptor(type.type), loadArraySizes(type.type, codeSpec, 2))
                     else -> codeSpec.anewarray(getTypeDescriptor(type.type))
@@ -429,7 +430,7 @@ object JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.ILoadArray -> codeSpec.iaload()
             is Instruction.ALoadLocal -> codeSpec.aload(instruction.index)
             is Instruction.NewVar -> variableInitializer(instruction.index, instruction.type, codeSpec)
-            is Instruction.LoadArray -> {}//codeSpec.aaload()
+            is Instruction.LoadArray -> codeSpec.aaload()
             is Instruction.LoadLocal -> codeSpec.aload(instruction.index)
             is Instruction.StoreRef -> codeSpec.astore(instruction.index)
             is Instruction.SubUnary -> codeSpec.iconst_m1().imul()

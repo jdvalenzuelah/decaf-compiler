@@ -384,11 +384,10 @@ class LocationTransform(
 
                 if(value is DecafExpression.Location.ArrayLocation) {
                     +exprTransform.transform(value.index)
-
-                    if((value.type is Type.Int || value.type is Type.Boolean) && load) {
-                        +Instruction.ILoadArray
-                    } else
-                        +Instruction.LoadArray
+                    when {
+                        (value.type is Type.Int || value.type is Type.Boolean) && load -> +Instruction.ILoadArray
+                        value.type is Type.Struct && value.context != null -> +Instruction.LoadArray
+                    }
                 }
 
                 if(value.subLocation != null && value.context != null) {
@@ -416,6 +415,12 @@ class LocationTransform(
 
             if(location is DecafExpression.Location.ArrayLocation) {
                 +exprTransform.transform(location.index)
+
+                when {
+                    (location.type is Type.Int || location.type is Type.Boolean) && load -> +Instruction.ILoadArray
+                    location.type is Type.Struct && location.context != null -> +Instruction.LoadArray
+                }
+
             }
 
             if(location.subLocation != null && location.context != null) {
