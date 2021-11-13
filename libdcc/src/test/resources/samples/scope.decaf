@@ -23,7 +23,6 @@ void main(void)
 	}
 
 	OutputInt(b);
-	return;
 }
 
 void Test(int a, int b, int c, int d)
@@ -32,7 +31,6 @@ void Test(int a, int b, int c, int d)
 	OutputInt(b);
 	OutputInt(c);
 	OutputInt(d);
-	return;
 }
 
 }

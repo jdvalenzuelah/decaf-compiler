@@ -21,8 +21,6 @@ void main(void)
 		OutputInt(A[i]);
 		i = i+1;
 	}
-	return;
-
 }
 
 
@@ -41,7 +39,6 @@ void Ordenar(void)
 		A[i]=temp;
 		i = i+1;
 	}
-	return;
 }
 
 int Minimo(int i)

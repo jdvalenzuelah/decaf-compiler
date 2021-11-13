@@ -137,6 +137,15 @@ sealed class DecafExpression : DecafElementsIR() {
 
 }
 
+fun DecafMethod.ensureEndsWithReturn(): DecafMethod {
+    val statements = block.statements
+    val newStatements = if(statements.last() is DecafStatement.Return)
+        statements
+    else
+        statements.toMutableList().apply { add(DecafStatement.Return(null)) }
+    return copy(block = block.copy(statements = newStatements))
+}
+
 sealed class DecafStatement : DecafElementsIR() {
 
     data class Block(

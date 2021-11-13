@@ -9,8 +9,6 @@ void main(void)
 	i = 0;
 	
 	Test(4,2,6,7,1,1,1,1,1,1,1,1,1,1,1,1);
-	return;
-
 }
 
 
@@ -19,7 +17,6 @@ void Test(int a, int b, int c, int d,int e,int f,int g,int h,int i,int j,int k,i
 	int resultado;
 	resultado = (a/b)*c-d+e+f+g+h+i+j+k+l+m+n+o+p;
 	OutputInt(resultado);
-	return;
 }
 
 }

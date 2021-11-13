@@ -21,8 +21,6 @@ void main(void)
 		i = i+1;
 	}
 
-	return;
-
 }
 
 int Ackerman(int m, int n)
@@ -37,7 +35,6 @@ int Ackerman(int m, int n)
 		{ return Ackerman(m-1, Ackerman(m,n-1));}
 		return 0;
 	}
-	return 0;
 
 }
 

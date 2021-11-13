@@ -4,6 +4,7 @@ import com.github.dcc.compiler.ir.Program
 import com.github.dcc.compiler.ir.decaf.DecafExpression
 import com.github.dcc.compiler.ir.decaf.DecafMethod
 import com.github.dcc.compiler.ir.decaf.DecafStatement
+import com.github.dcc.compiler.ir.decaf.ensureEndsWithReturn
 import com.github.dcc.compiler.ir.tac.Instruction
 import com.github.dcc.compiler.ir.tac.instructions
 import com.github.dcc.compiler.ir.tac.instructionsOf
@@ -34,7 +35,8 @@ class MethodTransform(
 
         return Program.Method(
             index = methods.indexOfFirst { it.signature == value.signature },
-            body = instructionsOf(value.block.statements.flatMap { statementTransform.transform(it) }),
+            body = instructionsOf(value.ensureEndsWithReturn()
+                .block.statements.flatMap { statementTransform.transform(it) }),
             symbols = value.symbols
         )
 

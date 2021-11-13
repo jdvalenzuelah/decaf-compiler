@@ -21,7 +21,6 @@ void main(void)
 	i = 1;	
 	M[i].T[1].n = 2;
 	OutputInt(M[i].T[1].n);
-	return;
 }
 
 }
