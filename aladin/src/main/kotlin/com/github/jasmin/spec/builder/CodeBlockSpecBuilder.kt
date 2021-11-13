@@ -146,6 +146,10 @@ class CodeBlockSpecBuilder {
         instructions.add(NoParams.ireturn)
     }
 
+    fun areturn() = apply {
+        instructions.add(NoParams.areturn)
+    }
+
     fun new(cls: ClassName) = apply { instructions.add(WithParams.new(cls)) }
 
     fun dup() = apply { instructions.add(NoParams.dup) }

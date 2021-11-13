@@ -426,6 +426,7 @@ object JasminGenerator : Backend<JasminProgramSpec> {
             is Instruction.IAStore -> codeSpec.iastore()
             is Instruction.AAStore -> codeSpec.aastore()
             is Instruction.IReturn -> codeSpec.ireturn()
+            is Instruction.AReturn -> codeSpec.areturn()
             is Instruction.Return -> codeSpec.returns()
             is Instruction.ILoadArray -> codeSpec.iaload()
             is Instruction.ALoadLocal -> codeSpec.aload(instruction.index)

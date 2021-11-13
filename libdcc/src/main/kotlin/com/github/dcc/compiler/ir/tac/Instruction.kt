@@ -348,6 +348,13 @@ sealed class Instruction {
         override val removes: Int = 1
     }
 
+    object AReturn : Instruction() {
+        override val mnemonic: String = "areturn"
+        override val adds: Int = 0
+        override val requires: Int = 1
+        override val removes: Int = 1
+    }
+
     data class If(val branchLabel: String) : Instruction() {
         override val mnemonic: String = "if"
         override val adds: Int = 0

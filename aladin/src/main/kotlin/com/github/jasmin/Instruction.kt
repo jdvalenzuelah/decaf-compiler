@@ -17,6 +17,7 @@ enum class NoParams(
     astore_0("astore_0"),
     _return("return"),
     ireturn("ireturn"),
+    areturn("ireturn"),
     iadd("iadd"),
     isub("isub"),
     idiv("idiv"),
