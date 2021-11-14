@@ -38,7 +38,9 @@ object DCC : CliktCommand() {
         .enum<Target>(ignoreCase = true)
         .default(Target.JASMIN)
 
-
+    private val destinationDir by option("-o", "--output-dir", help = "Directory to output result")
+        .file(canBeFile = false, canBeDir = true, mustBeWritable = true)
+        .default(File("."))
 
     override fun run() {
         val compiler = Compiler(file, target)
@@ -69,7 +71,7 @@ object DCC : CliktCommand() {
             }
 
             if(result is Compiler.CompilationResult.Success) {
-                result.compiledSource.dump()
+                result.compiledSource.dump(destinationDir)
             }
             echo(Prettify.compilationResult(result, file), err = result !is Compiler.CompilationResult.Success)
 
