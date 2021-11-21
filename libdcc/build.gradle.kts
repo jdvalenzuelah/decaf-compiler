@@ -36,6 +36,7 @@ dependencies {
     implementation("org.antlr:antlr4-runtime:$antlrVersion")
 
     implementation(project(":aladin"))
+    implementation("org.ow2.asm:asm:9.2")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))

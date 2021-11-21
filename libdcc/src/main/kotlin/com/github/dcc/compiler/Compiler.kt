@@ -2,6 +2,7 @@ package com.github.dcc.compiler
 
 import com.github.dcc.compiler.backend.Dumpable
 import com.github.dcc.compiler.backend.Target
+import com.github.dcc.compiler.backend.codegen.bytecode.JvmByteCodeGenerator
 import com.github.dcc.compiler.backend.codegen.jasmin.JasminGenerator
 import com.github.dcc.compiler.ir.Program
 import com.github.dcc.compiler.ir.ProgramTransform
@@ -63,7 +64,7 @@ class Compiler(
     private fun compile(ir: Program): Dumpable {
         return when(target) {
             Target.JASMIN -> JasminGenerator.compile(ir)
-            Target.JAVA8 -> JasminGenerator.compile(ir)
+            Target.JAVA8 -> JvmByteCodeGenerator.compile(ir)
         }
     }
 
