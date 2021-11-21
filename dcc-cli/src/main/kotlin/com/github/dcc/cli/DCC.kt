@@ -36,7 +36,7 @@ object DCC : CliktCommand() {
 
     private val target by option("--target", help = "Generate code for the given target")
         .enum<Target>(ignoreCase = true)
-        .default(Target.JASMIN)
+        .default(Target.JAVA8)
 
     private val destinationDir by option("-o", "--output-dir", help = "Directory to output result")
         .file(canBeFile = false, canBeDir = true, mustBeWritable = true)
