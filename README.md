@@ -31,21 +31,21 @@ $ ./gradlew generateGrammarSource
 ```
 
 
-## Usage
+## CLI usage
 ```sh
 $ git clone git@github.com:jdvalenzuelah/decaf-compiler.git ${YOUR_PROJECT_NAME}
 $ cd ${YOUR_PROJECT_NAME}
-$ ./gradlew clean build
+$ ./gradlew clean :dcc-cli:build
 ```
 
 Extract the dist
 ```sh
-$ tar -xf build/distributions/dcc-1.0.0.tar 
+$ tar -xf dcc-cli/build/distributions/dcc-cli-1.0.0.tar
 ```
 
 Run
 ```sh
-$ ./dcc-1.0.0/bin/dcc --help
+$ ./dcc-cli-1.0.0/bin/dcc-cli -h
 Usage: dcc [OPTIONS] FILE
 
 Options:
@@ -55,6 +55,7 @@ Options:
   -dtt, --dump-types       Prints struct table in plain text
   -ir, --dump-ir           Dump intermediate representation to file
   --target [JASMIN|JAVA8]  Generate code for the given target
+  -o, --output-dir PATH    Directory to output result
   -h, --help               Show this message and exit
 
 Arguments:

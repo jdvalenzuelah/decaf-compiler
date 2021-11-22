@@ -19,7 +19,7 @@ group = "com.github.dcc"
 version = "1.0.0"
 
 application {
-    mainClassName = "com.github.dcc.MainKt"
+    mainClassName = "com.github.dcc.cli.MainKt"
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
