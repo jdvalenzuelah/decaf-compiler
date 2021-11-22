@@ -47,6 +47,12 @@ class MethodStoreBuilder private constructor() : DecafBaseVisitor<Unit>() {
             parameters =ctx.parameter().map(parameterResolver::visitParameter),
             context = ctx,
         )
+
+        if(method.name == StdLib.InputInt.name || method.name == StdLib.OutputInt.name) {
+            Logger.warn("Defined stdlib method ${method.name}, ignoring.")
+            return
+        }
+
         Logger.info("Resolved method $method")
         methods.add(method)
     }

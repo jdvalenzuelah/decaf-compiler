@@ -7,9 +7,11 @@ import com.github.dcc.compiler.resolvers.StaticTypeResolver
 import com.github.dcc.compiler.symbols.variables.SymbolTable
 import com.github.dcc.decaf.symbols.Declaration
 import com.github.dcc.decaf.symbols.MethodStore
+import com.github.dcc.decaf.symbols.StdLib
 import com.github.dcc.decaf.symbols.TypeStore
 import com.github.dcc.parser.DecafBaseVisitor
 import com.github.dcc.parser.DecafParser
+import org.tinylog.kotlin.Logger
 
 class ProgramProduction(private val symbols: SymbolTable, private val methods: MethodStore, private val structs: TypeStore): DecafBaseVisitor<DecafElementsIR>() {
 
@@ -18,14 +20,20 @@ class ProgramProduction(private val symbols: SymbolTable, private val methods: M
     override fun visitProgram(ctx: DecafParser.ProgramContext): DecafProgram {
         return DecafProgram(
             symbols, structs,
-            methods = ctx.method_decl().map(::visitMethod_decl)
+            methods = ctx.method_decl().mapNotNull(::visitMethod_decl)
 
         )
     }
 
-    override fun visitMethod_decl(ctx: DecafParser.Method_declContext): DecafMethod {
+    override fun visitMethod_decl(ctx: DecafParser.Method_declContext): DecafMethod? {
         val methodName = ctx.method_sign().ID().text
         val methodScope = symbols.getNextChildScope(methodName)
+
+        if(methodName == StdLib.InputInt.name || methodName == StdLib.OutputInt.name) {
+            Logger.warn("Ignoring stdlib function $methodName from source")
+            return null
+        }
+
         return DecafMethod(
             signature = Declaration.Method.Signature(
                 name = methodName,
