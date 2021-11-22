@@ -18,7 +18,7 @@ class SemanticAnalysis internal constructor(
     companion object {
         internal operator fun invoke(symbols: ProgramSymbols, program: DecafParser.ProgramContext): Validated<Error> {
             return SemanticAnalysis(symbols)
-                .visitProgram(program)
+                .analyze(program)
         }
     }
 
